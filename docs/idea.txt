@@ -3,7 +3,7 @@ Service
 ##############################################
 
 
-Lets image a simple 8 bit adder service. Tthe adders functionality detailed below:
+Lets image a simple 8 bit adder service. The adders functionality detailed below:
 
 1. The adder is a micro service whose endpoints are accessible via routes of the form GET http://localhost/endpoint
 
@@ -29,4 +29,4 @@ Response Form
 ##############################################
 
 
-The response must be in the form of a HTTP request and the expected service response seperated by | . Do not include additional explanation text.
+The response must be in the form of a HTTP request and the expected service response separated by | . Do not include additional explanation text.
