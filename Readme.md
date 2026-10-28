@@ -78,7 +78,8 @@ This walks all 50 ground-truth rows (10 per label), keeping each row's
 ## Where logged results go
 
 You choose the path: `write_jsonl` and `write_csv` write exactly where
-told (e.g. `logs/runs.jsonl`). Use `append=True` on `write_jsonl` to layer
+told (e.g. `logs/runs.jsonl`; missing parent directories are created).
+Use `append=True` on `write_jsonl` to layer
 another backend's run into the same file instead of overwriting it. Each
 row carries a `backend` column, so the comparator can place backend runs
 side-by-side. CSV exports use the shared column layout in

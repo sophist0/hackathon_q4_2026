@@ -50,6 +50,7 @@ def write_jsonl(
 ) -> Path:
     """Write one JSON object per line; ``append`` adds another backend's run."""
     target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
     with open(target, "a" if append else "w", encoding="utf-8") as handle:
         for result in results:
             handle.write(json.dumps(format_row(result, backend)) + "\n")
@@ -69,6 +70,7 @@ def write_csv(
 ) -> Path:
     """Export rows to CSV using the shared log column layout."""
     target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
     rows = [format_row(result, backend) for result in results]
     with open(target, "w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(CSV_COLUMNS))

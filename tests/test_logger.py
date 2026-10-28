@@ -44,6 +44,15 @@ def test_jsonl_round_trip_and_backend_append(tmp_path):
     assert rows[1]["prompt_text"] == second["prompt_text"]
 
 
+def test_write_creates_missing_parent_dirs(tmp_path):
+    nested = tmp_path / "logs" / "nested" / "runs.jsonl"
+    write_jsonl(_results(), "jev", nested)
+    assert len(read_jsonl(nested)) == 2
+    nested_csv = tmp_path / "logs" / "nested" / "runs.csv"
+    write_csv(_results(), "jev", nested_csv)
+    assert nested_csv.exists()
+
+
 def test_csv_export_matches_column_layout(tmp_path):
     out = tmp_path / "runs.csv"
     write_csv(_results(), "clef-flash", out)
