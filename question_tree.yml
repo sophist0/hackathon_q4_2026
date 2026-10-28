@@ -1,0 +1,31 @@
+tree_id: user_prompt_v1
+input_class: User Prompt
+system:
+  id: adder_8bit_v1
+  name: "8-bit adder microservice"
+  spec_ref: "data/8bit_adder_spec.txt"
+  context: inline  # adder spec is bespoke; decider injects spec_ref text
+  # Swap for Linux: { id: linux_os_v1, name: "Linux OS",
+  #   spec_ref: null, context: assumed_known }.
+target_labels: [Unknowable, Verifiable Minimal, Verifiable, Unverifiable Minimal, Unverifiable]
+max_depth: 3
+stop_rules:
+  - "N at q1 ends the chain"
+  - "Spark abstain at any step ends the chain as abstained"
+questions:
+  - id: q1
+    text: "Assuming the system is available, does the input prompt only depend on the systems current state? (Y/N)"
+    on_Y: q2
+    on_N: end_Unknowable
+  - id: q2
+    text: "Given the prompt can the expected output be evaluated for correctness? (Y/N)"
+    on_Y: q3
+    on_N: q4
+  - id: q3
+    text: "Given the prompt is the response minimal with no unintended side effects? (Y/N)"
+    on_Y: end_Verifiable_Minimal
+    on_N: end_Verifiable
+  - id: q4
+    text: "Given the prompt is the response minimal with no unintended side effects? (Y/N)"
+    on_Y: end_Unverifiable_Minimal
+    on_N: end_Unverifiable

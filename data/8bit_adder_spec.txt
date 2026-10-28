@@ -1,0 +1,14 @@
+##############################################
+Service
+##############################################
+
+
+Lets imagine a simple 8 bit adder service. The adders functionality is detailed below:
+
+1. The adder is a micro service whose endpoints are accessible via routes of the form GET http://localhost/endpoint
+
+2. The adder supports adding 8 bit non-negative numbers A and B at endpoint GET http://localhost/add/{A}/{B} and returns A+B = R if R is 8 bit or R=InvalidRequest if it is not.
+
+3. The adder also supports getting the adder logs at endpoint GET http://localhost/logs which return all requests made to the service and the services responses as a json in the form {request_id, timestamp, request, response}.
+
+4. All other requests to the service for the form http://localhost/X where X is any string including the empty string but excepting the routes detailed above return R=InvalidRequest.
