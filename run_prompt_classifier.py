@@ -13,6 +13,7 @@ normalizes the reply to what decide() expects. Anything outside that shape
 import json
 import os
 import urllib.request
+from datetime import datetime
 
 from decider import load_tree
 from logger import write_jsonl
@@ -80,20 +81,24 @@ BACKENDS = (
 
 def main():
 
-    RUNALL = False
+    RUNALL = True
 
     tree = load_tree("question_tree.yml")
     rows = load_ground_truth_rows("data/classified_muse_spark_prompts_4.csv")
+    now = datetime.now()
+    ctime = now.strftime("%Y-%m-%d %H:%M:%S")
 
     if RUNALL:
+        # muse spark run costs ~$0.70
         for index, (backend, transport) in enumerate(BACKENDS):
             results = run_all(rows, tree, backend, transport, base_dir=".")
-            write_jsonl(results, backend, "logs/runs.jsonl")
+            write_jsonl(results, backend, "logs/{}_{}_runs.jsonl".format(backend,ctime))
     else:
         rdx = 0     # TEST only the first prompt
         for index, (backend, transport) in enumerate(BACKENDS):
+            print("{}: {}".format(backend, index))
             result = run_prompt(rows[rdx], tree, backend, transport, threshold=0.5, base_dir=".")
-            write_jsonl([result], backend, "logs/one_off.jsonl", append=index > 0)
+            write_jsonl([result], backend, "logs/{}_{}_one_off.jsonl".format(backend,ctime), append=index > 0)
             print(backend, "->", result["predicted_label"], result["path"])
 
 

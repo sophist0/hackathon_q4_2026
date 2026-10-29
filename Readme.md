@@ -161,3 +161,21 @@ Each backend builds its own request object from the same
 the decider adapter decides *how* to ask it. No transports are included;
 the test suites show the stub shapes (`tests/test_decider.py`,
 `tests/test_runner.py`).
+
+## Compare backends
+
+`comparator.py` scores logged runs against the ground-truth
+`Categorization` labels in `data/classified_muse_spark_prompts_4.csv`
+(the sole baseline). It joins on `(prompt_text, expected)`, so it works
+whether or not logged rows carry a `category`:
+
+```bash
+python comparator.py logs/spark-as-jev_2026-10-29*.jsonl
+python comparator.py logs/*_runs.jsonl --json
+```
+
+The report shows per-backend accuracy, a per-category accuracy table,
+backend-vs-backend agreement rate, and the diverge list (backends
+disagree) plus the all-missed list (no backend got the label).
+`tests/test_comparator.py` covers the scoring (`python -m pytest
+tests/test_comparator.py -q`).

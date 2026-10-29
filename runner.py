@@ -10,6 +10,7 @@ Traversal policy lives here; single questions are delegated to
 from __future__ import annotations
 
 import csv
+import random
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any
@@ -44,9 +45,12 @@ def load_ground_truth_rows(csv_path: str | Path) -> list[dict[str, str]]:
                 {
                     "prompt_text": prompt_text,
                     "expected": (record.get(GROUND_TRUTH_COLUMNS["expected"]) or "").strip(),
-                    "category": (record.get(GROUND_TRUTH_COLUMNS["category"]) or "").strip(),
+                    # "category": (record.get(GROUND_TRUTH_COLUMNS["category"]) or "").strip(),
                 }
             )
+
+    # shuffle list so categories are mixed up
+    random.shuffle(rows)
     return rows
 
 
@@ -70,7 +74,7 @@ def run_prompt(
     return {
         "prompt_text": prompt_row["prompt_text"],
         "expected": prompt_row.get("expected", ""),
-        "category": prompt_row.get("category", ""),
+        # "category": prompt_row.get("category", ""),       Avoid leaking answer
         "answers": result.answers,
         "confidences": result.confidences,
         "path": result.path,
