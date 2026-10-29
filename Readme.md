@@ -104,7 +104,7 @@ from runner import load_ground_truth_rows, run_prompt
 from logger import write_jsonl
 
 tree = load_tree("question_tree.yml")
-rows = load_ground_truth_rows("data/classified_muse_spark_prompts_4.csv")
+rows = load_ground_truth_rows("data/shuffled_prompts_4.csv")
 
 def my_transport(request):  # stub — swap in a real backend call here
     return {"answer": "Y", "p": 0.9}
@@ -165,9 +165,10 @@ the test suites show the stub shapes (`tests/test_decider.py`,
 ## Compare backends
 
 `comparator.py` scores logged runs against the ground-truth
-`Categorization` labels in `data/classified_muse_spark_prompts_4.csv`
-(the sole baseline). It joins on `(prompt_text, expected)`, so it works
-whether or not logged rows carry a `category`:
+`Categorization` labels in `data/shuffled_prompts_4.csv`
+(the sole baseline). It joins on the stable `row_id` each logged row
+carries, so it works whether or not logged rows carry a `category`.
+Rows without a matching `row_id` are reported unscored, never guessed:
 
 ```bash
 python comparator.py logs/spark-as-jev_2026-10-29*.jsonl

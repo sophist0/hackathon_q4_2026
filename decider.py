@@ -78,6 +78,8 @@ class TreeSpec:
 class DeciderState:
     system: System
     prompt_text: str
+    response: str = ""
+    expected: str = ""
 
 
 @dataclass(frozen=True)
@@ -179,6 +181,8 @@ def build_jev_request(state: DeciderState, question: Question, context_text: str
         "system": {"id": state.system.id, "name": state.system.name},
         "context": context_text,
         "prompt": state.prompt_text,
+        "response": state.response,
+        "expected": state.expected,
         "question": {"id": question.id, "text": question.text},
     }
 
@@ -195,6 +199,8 @@ def build_spark_request(state: DeciderState, question: Question, context_text: s
         "system": state.system.name,
         "context": context_text,
         "user_prompt": state.prompt_text,
+        "response": state.response,
+        "expected": state.expected,
         "question": question.text,
         "response_format": {"answer": "Y|N", "confidence": "[0,1]"},
     }
@@ -269,9 +275,13 @@ def walk(
     transport: Transport,
     threshold: float = 0.5,
     base_dir: str | Path | None = None,
+    response: str = "",
+    expected: str = "",
 ) -> WalkResult:
     """Walk one prompt down the tree with at most ``max_depth`` decider calls."""
-    state = DeciderState(system=tree.system, prompt_text=prompt_text)
+    state = DeciderState(
+        system=tree.system, prompt_text=prompt_text, response=response, expected=expected
+    )
     result = WalkResult()
     node = tree.first
     for _ in range(tree.max_depth):

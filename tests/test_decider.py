@@ -150,6 +150,59 @@ def test_decide_rejects_bad_replies():
         decide(state, question, "other", lambda req: {"answer": "Y", "p": 0.5})
 
 
+def test_state_response_and_expected_reach_jev_request():
+    from decider import build_jev_request
+
+    tree = load_tree(TREE_PATH)
+    state = DeciderState(
+        system=tree.system,
+        prompt_text="How do I add 5 and 7?",
+        response="GET /add/5/7",
+        expected="12",
+    )
+    request = build_jev_request(state, _question(tree, "q1"), "spec")
+    assert request["response"] == "GET /add/5/7"
+    assert request["expected"] == "12"
+    assert "category" not in request
+
+
+def test_state_response_and_expected_reach_spark_request():
+    from decider import build_spark_request
+
+    tree = load_tree(TREE_PATH)
+    state = DeciderState(
+        system=tree.system,
+        prompt_text="How do I add 5 and 7?",
+        response="GET /add/5/7",
+        expected="12",
+    )
+    request = build_spark_request(state, _question(tree, "q1"), "spec")
+    assert request["response"] == "GET /add/5/7"
+    assert request["expected"] == "12"
+
+
+def test_walk_threads_response_and_expected_into_state():
+    tree = load_tree(TREE_PATH)
+    seen = []
+
+    def transport(request):
+        seen.append(request)
+        return {"answer": "N", "p": 0.8}
+
+    walk(
+        tree,
+        "How do I add 5 and 7?",
+        "jev",
+        transport,
+        base_dir=ROOT,
+        response="GET /add/5/7",
+        expected="12",
+    )
+    assert seen
+    assert all(request["response"] == "GET /add/5/7" for request in seen)
+    assert all(request["expected"] == "12" for request in seen)
+
+
 def test_walk_three_step_chain_through_code_tree():
     tree = load_tree(TREE_PATH)
     replies = iter([("Y", 0.9), ("Y", 0.8), ("N", 0.75)])

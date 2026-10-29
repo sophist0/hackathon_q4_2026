@@ -1,15 +1,15 @@
 """Pytest suite for the comparator.
 
 Scoring follows ``docs/design_draft.md``: the ground-truth CSV's
-``Categorization`` labels are the sole baseline, joined on
-``(prompt_text, expected)`` so twin variants of one prompt (e.g. with and
-without the ``/logs`` echo) score against their own run. It works whether
-or not logged rows carry a ``category`` of their own.
+``Categorization`` labels are the sole baseline, joined on the stable
+``row_id`` only. Rows without a matching id are unscored, never guessed.
+It works whether or not logged rows carry a ``category`` of their own.
 """
 
 from pathlib import Path
 
 from comparator import (
+    GroundTruth,
     compare,
     compare_files,
     format_report,
@@ -23,24 +23,32 @@ from logger import write_jsonl
 ROOT = Path(__file__).resolve().parents[1]
 CSV_PATH = ROOT / "data/classified_muse_spark_prompts_4.csv"
 
-TRUTH = {
-    ("add 5 and 7", "12"): [{"expected": "12", "category": "Verifiable Minimal"}],
-    ("divide 100 by 4", "InvalidRequest"): [
-        {"expected": "InvalidRequest", "category": "Unknowable"}
-    ],
-    ("empty logs", "[]"): [
-        {"expected": "[]", "category": "Verifiable Minimal"},
-        {"expected": "[]", "category": "Verifiable"},
-    ],
-}
+
+def _truth(*entries):
+    """Build a GroundTruth from (row_id, prompt, expected, category) tuples."""
+    truth = GroundTruth()
+    for row_id, prompt, expected, category in entries:
+        truth.by_id.setdefault(row_id, []).append(
+            {"row_id": row_id, "prompt_text": prompt, "expected": expected, "category": category}
+        )
+    return truth
 
 
-def _row(prompt, backend, predicted, confidences="0.9", expected=""):
-    if not expected:
-        expected = next(
-            (exp for (prompt_text, exp) in TRUTH if prompt_text == prompt), ""
+TRUTH = _truth(
+    ("1", "add 5 and 7", "12", "Verifiable Minimal"),
+    ("2", "divide 100 by 4", "InvalidRequest", "Unknowable"),
+    ("3", "empty logs", "[]", "Verifiable Minimal"),
+    ("3", "empty logs", "[]", "Verifiable"),
+)
+
+
+def _row(prompt, backend, predicted, confidences="0.9", row_id=None, expected="12"):
+    if row_id is None:
+        row_id = {"add 5 and 7": "1", "divide 100 by 4": "2", "empty logs": "3"}.get(
+            prompt, ""
         )
     return {
+        "row_id": row_id,
         "prompt_text": prompt,
         "backend": backend,
         "path": "q1",
@@ -53,12 +61,23 @@ def _row(prompt, backend, predicted, confidences="0.9", expected=""):
     }
 
 
-def test_load_ground_truth_indexes_prompt_and_expected():
+def test_load_ground_truth_indexes_row_ids():
     truth = load_ground_truth(CSV_PATH)
-    assert sum(len(entries) for entries in truth.values()) == 50
-    assert all(len(entries) >= 1 for entries in truth.values())
-    twin_keys = [key for key, entries in truth.items() if len(entries) > 1]
-    assert len(twin_keys) >= 1  # the CSV reuses prompts across variants
+    assert sum(len(entries) for entries in truth.by_id.values()) == 50
+    # The classified CSV has no Row column: ids are the 1-based positions.
+    assert sorted(truth.by_id, key=int) == [str(i) for i in range(1, 51)]
+
+
+def test_load_ground_truth_prefers_row_column(tmp_path):
+    csv_path = tmp_path / "mini.csv"
+    csv_path.write_text(
+        "Row|Prompts|Response|Expected Request Response|Explanation|Categorization|Notes\n"
+        "7|How do I add?|GET /add/1/2|12|x|Verifiable Minimal|\n",
+        encoding="utf-8",
+    )
+    truth = load_ground_truth(csv_path)
+    assert list(truth.by_id) == ["7"]
+    assert truth.by_id["7"][0]["category"] == "Verifiable Minimal"
 
 
 def test_prediction_matches_canonicalizes_leaf_labels():
@@ -75,18 +94,20 @@ def test_parse_confidences_handles_string_and_list():
     assert parse_confidences({}) == []
 
 
-def test_lookup_prefers_exact_variant_then_prompt_fallback():
-    row = _row("add 5 and 7", "jev", "end_Verifiable_Minimal")
-    assert lookup_candidates(row, TRUTH) == TRUTH[("add 5 and 7", "12")]
-    row_no_expected = dict(row, expected="")
-    assert lookup_candidates(row_no_expected, TRUTH) == TRUTH[("add 5 and 7", "12")]
-    assert lookup_candidates(_row("missing", "jev", "end_Unknowable"), TRUTH) == []
+def test_lookup_joins_on_row_id_only():
+    row = _row("empty logs", "jev", "end_Verifiable")
+    assert [entry["category"] for entry in lookup_candidates(row, TRUTH)] == [
+        "Verifiable Minimal",
+        "Verifiable",
+    ]
+    assert lookup_candidates(_row("add 5 and 7", "jev", "end_X", row_id="99"), TRUTH) == []
+    assert lookup_candidates(_row("add 5 and 7", "jev", "end_X", row_id=""), TRUTH) == []
 
 
 def test_compare_scores_accuracy_per_backend_and_category():
     rows = [
         _row("add 5 and 7", "jev", "end_Verifiable_Minimal"),
-        _row("divide 100 by 4", "jev", "end_Verifiable"),  # miss
+        _row("divide 100 by 4", "jev", "end_Verifiable", expected="InvalidRequest"),
     ]
     result = compare(rows, TRUTH)
     assert result.per_backend["jev"].n == 2
@@ -94,44 +115,44 @@ def test_compare_scores_accuracy_per_backend_and_category():
     assert result.per_backend["jev"].accuracy == 0.5
     assert result.per_category["Verifiable Minimal"]["jev"].correct == 1
     assert result.per_category["Unknowable"]["jev"].correct == 0
-    assert result.all_missed == ["divide 100 by 4"]
+    assert result.all_missed == ["row 2: divide 100 by 4"]
     assert result.diverged == []
     assert result.agreement_rate is None
 
 
-def test_compare_scores_twin_variants_separately():
+def test_compare_scores_twin_variants_by_id():
+    result = compare([_row("empty logs", "jev", "end_Verifiable_Minimal", expected="[]")], TRUTH)
+    assert result.per_backend["jev"].correct == 1
+    assert result.all_missed == []
+    result = compare([_row("empty logs", "jev", "end_Unknowable", expected="[]")], TRUTH)
+    assert result.per_backend["jev"].correct == 0
+    assert result.all_missed == ["row 3: empty logs"]
+
+
+def test_compare_leaves_idless_and_unknown_rows_unscored():
     rows = [
-        _row("empty logs", "jev", "end_Verifiable_Minimal"),
+        _row("add 5 and 7", "jev", "end_Verifiable_Minimal", row_id=""),
+        _row("add 5 and 7", "jev", "end_Verifiable_Minimal", row_id="99"),
     ]
     result = compare(rows, TRUTH)
-    assert result.per_backend["jev"].correct == 1
-    assert "empty logs" in result.ambiguous
-    rows = [_row("empty logs", "jev", "end_Unknowable")]
-    result = compare(rows, TRUTH)
-    assert result.per_backend["jev"].correct == 0
-    assert result.all_missed == ["empty logs"]
+    assert result.per_backend == {}
+    assert sorted(result.unscored) == ["add 5 and 7", "row 99: add 5 and 7"]
 
 
 def test_compare_flags_divergence_and_agreement():
     rows = [
         _row("add 5 and 7", "jev", "end_Verifiable_Minimal"),
         _row("add 5 and 7", "spark-as-jev", "end_Verifiable_Minimal"),
-        _row("divide 100 by 4", "jev", "end_Unknowable"),
-        _row("divide 100 by 4", "spark-as-jev", "end_Verifiable"),  # diverges + misses
+        _row("divide 100 by 4", "jev", "end_Unknowable", expected="InvalidRequest"),
+        _row("divide 100 by 4", "spark-as-jev", "end_Verifiable", expected="InvalidRequest"),
     ]
     result = compare(rows, TRUTH)
     assert result.agreement_n == 2
     assert result.agreement_agree == 1
     assert result.agreement_rate == 0.5
-    assert result.diverged == ["divide 100 by 4"]
+    assert result.diverged == ["row 2: divide 100 by 4"]
     assert result.all_missed == []
     assert result.per_backend["spark-as-jev"].accuracy == 0.5
-
-
-def test_compare_lists_prompts_missing_from_ground_truth():
-    result = compare([_row("unknown prompt", "jev", "end_Unknowable")], TRUTH)
-    assert result.unscored == ["unknown prompt"]
-    assert result.per_backend == {}
 
 
 def test_compare_builds_confidence_histograms():
@@ -143,20 +164,21 @@ def test_compare_builds_confidence_histograms():
 
 def test_compare_files_and_report_on_real_csv(tmp_path):
     truth = load_ground_truth(CSV_PATH)
-    (prompt, expected), entries = next(iter(truth.items()))
+    row_id, entries = next(iter(truth.by_id.items()))
     label = "end_" + entries[0]["category"].replace(" ", "_")
     log = tmp_path / "runs.jsonl"
     write_jsonl(
         [
             {
-                "prompt_text": prompt,
+                "row_id": row_id,
+                "prompt_text": entries[0]["prompt_text"],
                 "backend": "jev",
                 "path": "q1",
                 "answers": "N",
                 "confidences": "0.9",
                 "predicted_label": label,
                 "stop_step": "q1",
-                "expected": expected,
+                "expected": entries[0]["expected"],
                 "category": "",
             }
         ],
@@ -167,4 +189,4 @@ def test_compare_files_and_report_on_real_csv(tmp_path):
     assert result.per_backend["jev"].correct == 1
     report = format_report(result)
     assert "jev: 1/1 (100.0%)" in report
-    assert "agreement: 0/0 (n/a)" in report
+    assert "agreement: 0/0" in report

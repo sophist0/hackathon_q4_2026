@@ -24,12 +24,15 @@ def _results():
 
 
 def test_format_row_flattens_runner_result():
-    row = format_row(_results()[0], "jev")
+    first = _results()[0]
+    row = format_row(first, "jev")
     assert row["backend"] == "jev"
     assert row["path"] == "q1"
     assert row["answers"] == "N"
     assert row["predicted_label"] == "end_Unknowable"
     assert row["expected"]
+    assert row["row_id"] == first["row_id"]
+    assert row["response"] == first["response"]
     # Labels stay out of logs (no-leak rule); the column still exists
     # so the comparator's side-by-side layout is unchanged.
     assert row["category"] == ""

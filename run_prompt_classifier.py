@@ -56,6 +56,8 @@ def spark_transport(request):
         f"System: {request['system']}\n"
         f"Spec:\n{request['context']}\n"
         f"User prompt: {request['user_prompt']}\n"
+        f"Response: {request.get('response', '')}\n"
+        f"Expected: {request.get('expected', '')}\n"
         f"Question (answer Y or N): {request['question']}\n"
         'Reply as JSON only: {"answer": "Y" or "N", "confidence": 0.0-1.0}'
     )
@@ -84,12 +86,12 @@ def main():
     RUNALL = True
 
     tree = load_tree("question_tree.yml")
-    rows = load_ground_truth_rows("data/classified_muse_spark_prompts_4.csv")
+    rows = load_ground_truth_rows("data/shuffled_prompts_4.csv")
     now = datetime.now()
     ctime = now.strftime("%Y-%m-%d %H:%M:%S")
 
     if RUNALL:
-        # muse spark run costs ~$0.70
+        # muse spark run costs ~$0.70, ~5min to run
         for index, (backend, transport) in enumerate(BACKENDS):
             results = run_all(rows, tree, backend, transport, base_dir=".")
             write_jsonl(results, backend, "logs/{}_{}_runs.jsonl".format(backend,ctime))

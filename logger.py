@@ -15,7 +15,9 @@ from pathlib import Path
 from typing import Any
 
 CSV_COLUMNS: tuple[str, ...] = (
+    "row_id",
     "prompt_text",
+    "response",
     "backend",
     "path",
     "answers",
@@ -30,7 +32,9 @@ CSV_COLUMNS: tuple[str, ...] = (
 def format_row(result: Mapping[str, Any], backend: str) -> dict[str, str]:
     """Flatten one runner result dict to a string-only log row."""
     return {
+        "row_id": str(result.get("row_id", "")),
         "prompt_text": str(result["prompt_text"]),
+        "response": str(result.get("response", "")),
         "backend": backend,
         "path": ">".join(result["path"]),
         "answers": ",".join(result["answers"]),

@@ -1,13 +1,13 @@
 """Comparator: score backend runs against the ground-truth labels.
 
 Per ``docs/design_draft.md`` the independent ground truth
-(``data/classified_muse_spark_prompts_4.csv``) is the sole baseline: each
-backend's predicted label is compared against the row's ``Categorization``
-label, while backend-vs-backend agreement is diagnostic only.
+(``data/shuffled_prompts_4.csv``) is the sole baseline: each backend's
+predicted label is compared against the row's ``Categorization`` label,
+while backend-vs-backend agreement is diagnostic only.
 
 Logger rows may or may not carry their own ``category`` (runs can strip it
 to avoid leaking answers into logs); this module always (re)joins the
-ground truth CSV on ``prompt_text``, so scoring works either way.
+ground truth CSV on ``row_id``, so scoring works either way.
 """
 
 from __future__ import annotations
@@ -64,65 +64,65 @@ def parse_confidences(row: Mapping[str, Any]) -> list[float]:
 
 
 GROUND_TRUTH_COLUMNS = {
+    "row_id": "Row",
     "prompt_text": "Prompts",
-    "response": "Response",
     "expected": "Expected Request Response",
     "category": "Categorization",
 }
 
 
-GroundTruth = dict[(str, str), list[dict[str, str]]]
-"""Ground truth index: ``prompt_text`` -> candidate entries.
+@dataclass
+class GroundTruth:
+    """Ground-truth index; the draft's sole baseline, parsed from the CSV.
 
-The key is composite because the same prompt can appear under several
-ground-truth variants (e.g. with and without the ``/logs`` echo, each with
-its own ``Categorization`` label). Rows carry ``expected``, so the exact
-variant usually resolves; the rare fully ambiguous key scores a hit when
-the prediction matches *any* candidate and is listed in
-``Comparison.ambiguous``.
-"""
+    Joins logged rows on their stable ``row_id`` only (the ``Row`` column
+    of the shuffled CSV, or the runner's positional id). No text fallback:
+    a row without a matching id is unscored.
+    """
+
+    by_id: dict[str, list[dict[str, str]]] = field(default_factory=dict)
 
 
 def load_ground_truth(csv_path: str | Path) -> GroundTruth:
-    """Index the ground-truth CSV (the draft's sole baseline).
+    """Index the ground-truth CSV, independent of whatever the rows carry.
 
-    Parsed straight from the CSV, independent of whatever the runner rows
-    carry, so scoring works even when logged rows strip the labels.
+    Scoring works even when logged rows strip the labels, since the
+    ``Categorization`` labels are rejoined here at compare time.
     """
-    truth: GroundTruth = defaultdict(list)
+    truth = GroundTruth()
     with open(csv_path, newline="", encoding="utf-8") as handle:
-        for record in csv.DictReader(handle, delimiter="|"):
+        reader = csv.DictReader(handle, delimiter="|")
+        position = 0
+        for record in reader:
             prompt_text = (record.get(GROUND_TRUTH_COLUMNS["prompt_text"]) or "").strip()
             if not prompt_text:
                 continue
-            response = (record.get(GROUND_TRUTH_COLUMNS["response"]) or "").strip()
-            expected = (record.get(GROUND_TRUTH_COLUMNS["expected"]) or "").strip()
-            truth[(prompt_text, response)].append(
+            position += 1
+            row_id = (record.get(GROUND_TRUTH_COLUMNS["row_id"]) or "").strip() or str(
+                position
+            )
+            truth.by_id.setdefault(row_id, []).append(
                 {
-                    "response": response,
-                    "expected": expected,
-                    "category": (record.get(GROUND_TRUTH_COLUMNS["category"]) or "").strip(),
+                    "row_id": row_id,
+                    "prompt_text": prompt_text,
+                    "expected": (record.get(GROUND_TRUTH_COLUMNS["expected"]) or "").strip(),
+                    "category": (
+                        record.get(GROUND_TRUTH_COLUMNS["category"]) or ""
+                    ).strip(),
                 }
             )
-    return dict(truth)
+    return truth
 
 
-def lookup_candidates(
-    row: Mapping[str, Any], ground_truth: Mapping[tuple[str, str], list[dict[str, str]]]
-) -> list[dict[str, str]]:
-    """Find the ground-truth entries a logged row should score against."""
-    prompt = str(row.get("prompt_text", ""))
-    expected = str(row.get("expected", ""))
-    exact = ground_truth.get((prompt, expected))
-    if exact:
-        return exact
-    # Fall back to every variant of the prompt (e.g. rows logged without
-    # ``expected``); an empty list means unscored.
-    merged: list[dict[str, str]] = []
-    for (known_prompt, _), entries in ground_truth.items():
-        if known_prompt == prompt:
-            merged.extend(entries)
-    return merged
+def lookup_candidates(row: Mapping[str, Any], ground_truth: GroundTruth) -> list[dict[str, str]]:
+    """Find the ground-truth entries a logged row should score against.
+
+    Joins on ``row_id`` only. An empty list means unscored.
+    """
+    row_id = str(row.get("row_id", ""))
+    if row_id:
+        return ground_truth.by_id.get(row_id, [])
+    return []
 
 
 @dataclass
@@ -178,30 +178,41 @@ def _row_correct(row: Mapping[str, Any], candidates: list[dict[str, str]]) -> bo
 
 def compare(
     rows: Iterable[Mapping[str, Any]],
-    ground_truth: Mapping[tuple[str, str], list[dict[str, str]]],
+    ground_truth: GroundTruth,
 ) -> Comparison:
-    """Score logger rows (any mix of backends) against the ground truth."""
-    by_variant: dict[tuple[str, str], dict[str, list[Mapping[str, Any]]]] = defaultdict(
+    """Score logger rows (any mix of backends) against the ground truth.
+
+    Joins on ``row_id`` only. Rows without a ``row_id``, or whose id has
+    no ground-truth entry, are unscored.
+    """
+    groups: dict[str, dict[str, list[Mapping[str, Any]]]] = defaultdict(
         lambda: defaultdict(list)
     )
+    idless: list[Mapping[str, Any]] = []
     for row in rows:
-        prompt = str(row.get("prompt_text", ""))
         backend = str(row.get("backend", ""))
-        if prompt and backend:
-            # Keep each logged (prompt, expected) variant separate so twin
-            # ground-truth variants score against their own run.
-            by_variant[(prompt, str(row.get("response", "")))][backend].append(row)
+        if not backend:
+            continue
+        row_id = str(row.get("row_id", ""))
+        if row_id:
+            # Rows sharing a row_id are repeat runs of one ground-truth row.
+            groups[row_id][backend].append(row)
+        else:
+            idless.append(row)
 
     result = Comparison()
     confidences: dict[str, list[float]] = defaultdict(list)
-    for (prompt, _), per_backend in by_variant.items():
+    for row in idless:
+        result.unscored.append(str(row.get("prompt_text", "")))
+    for row_id, per_backend in groups.items():
         first_row = next(iter(per_backend.values()))[0]
+        label = f"row {row_id}: {first_row.get('prompt_text', '')}"
         candidates = lookup_candidates(first_row, ground_truth)
         if not candidates:
-            result.unscored.append(prompt)
+            result.unscored.append(label)
             continue
-        if len({entry["category"] for entry in candidates}) > 1 and prompt not in result.ambiguous:
-            result.ambiguous.append(prompt)
+        if len({entry["category"] for entry in candidates}) > 1 and label not in result.ambiguous:
+            result.ambiguous.append(label)
         flat: list[Mapping[str, Any]] = [
             row for runs in per_backend.values() for row in runs
         ]
@@ -230,9 +241,9 @@ def compare(
             if len(labels) == 1:
                 result.agreement_agree += 1
             else:
-                result.diverged.append(prompt)
+                result.diverged.append(label)
         if not any(_row_correct(row, candidates) for row in flat):
-            result.all_missed.append(prompt)
+            result.all_missed.append(label)
     result.histograms = {
         backend: _histogram(values) for backend, values in confidences.items()
     }
@@ -290,7 +301,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("logs", nargs="+", help="JSONL log file(s) written by logger.write_jsonl")
     parser.add_argument(
         "--ground-truth",
-        default="data/classified_muse_spark_prompts_4.csv",
+        default="data/shuffled_prompts_4.csv",
         help="ground-truth CSV (Categorization labels are the baseline)",
     )
     parser.add_argument("--json", action="store_true", help="emit the report as JSON")

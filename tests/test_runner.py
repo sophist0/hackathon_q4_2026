@@ -21,8 +21,8 @@ def _tree():
     return load_tree(TREE_PATH)
 
 
-def _row(prompt="How do I add 5 and 7?"):
-    return {"prompt_text": prompt, "expected": "GET /add/5/7 | 12", "category": "Verifiable Minimal"}
+def _row(prompt="How do I add 5 and 7?", row_id="7"):
+    return {"row_id": row_id, "prompt_text": prompt, "response": "GET /add/5/7", "expected": "GET /add/5/7 | 12", "category": "Verifiable Minimal"}
 
 
 def _stub(queue, calls=None):
@@ -43,6 +43,19 @@ def test_load_ground_truth_rows():
     # The comparator joins them from the CSV at compare time instead
     # (the 5-label coverage now lives in tests/test_comparator.py).
     assert all("category" not in row for row in rows)
+    # Without a Row column, ids are the stable 1-based data positions.
+    assert sorted((row["row_id"] for row in rows), key=int) == [str(i) for i in range(1, 51)]
+
+
+def test_load_ground_truth_rows_prefers_row_column(tmp_path):
+    csv_path = tmp_path / "mini.csv"
+    csv_path.write_text(
+        "Row|Prompts|Expected Request Response|Categorization\n"
+        "42|How do I add?|12|Verifiable Minimal\n",
+        encoding="utf-8",
+    )
+    (row,) = load_ground_truth_rows(csv_path)
+    assert row["row_id"] == "42"
 
 
 def test_n_at_q1_ends_chain_in_one_call():
@@ -55,6 +68,8 @@ def test_n_at_q1_ends_chain_in_one_call():
     assert result["predicted_label"] == "end_Unknowable"
     assert result["stop_step"] == "q1"
     assert calls == ["q1"]
+    assert result["row_id"] == "7"
+    assert result["response"] == "GET /add/5/7"
     # Even a caller-supplied label must not propagate into the result.
     assert "category" not in result
 
@@ -122,12 +137,16 @@ def test_max_depth_caps_calls_on_deeper_tree():
 
 def test_run_all_keeps_expected_attached_without_labels():
     rows = load_ground_truth_rows(CSV_PATH)[:3]
-    [first, second, third] = rows
-    queues = {
-        first["prompt_text"]: [("N", 0.8)],
-        second["prompt_text"]: [("Y", 0.9), ("Y", 0.8), ("N", 0.7)],
-        third["prompt_text"]: [("Y", 0.9), ("N", 0.8), ("Y", 0.7)],
-    }
+    planned = [
+        [("N", 0.8)],
+        [("Y", 0.9), ("Y", 0.8), ("N", 0.7)],
+        [("Y", 0.9), ("N", 0.8), ("Y", 0.7)],
+    ]
+    # Keyed lists are extended per row (not replaced) so twin prompts
+    # sharing their text still get enough answers in run order.
+    queues: dict[str, list] = {}
+    for row, answers in zip(rows, planned):
+        queues.setdefault(row["prompt_text"], []).extend(answers)
     seen_requests = []
 
     def transport(request):
@@ -144,9 +163,13 @@ def test_run_all_keeps_expected_attached_without_labels():
     ]
     for row, result in zip(rows, results):
         assert result["expected"] == row["expected"]
+        assert result["row_id"] == row["row_id"]
         assert "category" not in result
-    # Nothing the model sees may carry ground-truth answers.
+    # Response and expected now ride along to the model by design;
+    # the label stays out so the run cannot leak the answer key.
     assert seen_requests
+    by_prompt = {row["prompt_text"]: row for row in rows}
     for request in seen_requests:
         assert "category" not in request
-        assert "expected" not in request
+        assert request["response"] == by_prompt[request["prompt"]]["response"]
+        assert request["expected"] == by_prompt[request["prompt"]]["expected"]
