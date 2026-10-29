@@ -24,6 +24,60 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+## API keys (local only — never commit)
+
+`run_prompt_classifier.py` reads keys/URLs from the environment, so
+nothing secret lives in the repo:
+
+- `JEV_API_URL`, `JEV_API_KEY` — Jev endpoint
+- `CLEF_API_URL`, `CLEF_API_KEY` — Clef-flash endpoint
+- `META_API_KEY` — Muse Spark key (Meta Model API)
+
+### Option A: per-shell exports (recommended, nothing on disk)
+
+```bash
+export JEV_API_URL="https://..."
+export JEV_API_KEY="..."
+export CLEF_API_URL="https://..."
+export CLEF_API_KEY="..."
+export META_API_KEY="..."
+
+python run_prompt_classifier.py
+```
+
+The variables last only for that terminal session. Verify one is seen
+without printing the value itself:
+
+```bash
+python -c "import os; print('META_API_KEY set:', bool(os.environ.get('META_API_KEY')))"
+```
+
+### Option B: persistent across shells, still outside git
+
+Put the same `export` lines in your shell startup file (outside this
+repo), e.g. `~/.bashrc` or `~/.zshrc`, then `source` it. Never put them
+in a file inside the repo unless that file is git-ignored.
+
+An untracked `.env` file also works — `.gitignore` already covers
+`.env` — but this project has no dotenv loader, so load it manually in
+each shell before running:
+
+```bash
+printf 'META_API_KEY="..."\n' > .env   # local only, never commit
+set -a; source .env; set +a
+python run_prompt_classifier.py
+```
+
+### How not to leak a key
+
+- Never paste a key into `*.py`, `*.yml`, or `*.csv`. Keys only travel
+  via environment variables.
+- Before committing, check: `git status --short` should show no key
+  file, and `git diff --cached` should show no key value. If a key ever
+  lands in a commit, rotate it — removing the file later does not erase
+  history.
+- If you add a new secret file name, add it to `.gitignore` too.
+
 ## Run the tests
 
 From the project root:

@@ -16,7 +16,8 @@ import urllib.request
 
 from decider import load_tree
 from logger import write_jsonl
-from runner import load_ground_truth_rows, run_prompt
+from runner import load_ground_truth_rows, run_prompt, run_all
+
 
 SPARK_MODEL = "muse-spark-1.3"
 SPARK_API_URL = "https://api.meta.ai/v1/chat/completions"
@@ -71,20 +72,29 @@ def spark_transport(request):
 
 
 BACKENDS = (
-    #("jev", jev_transport),
-    #("clef-flash", clef_transport),
-    ("spark-as-jev", spark_transport),
+#("jev", jev_transport),
+#("clef-flash", clef_transport),
+("spark-as-jev", spark_transport),
 )
 
 
 def main():
-    rdx = 0     # TEST only the first prompt
+
+    RUNALL = False
+
     tree = load_tree("question_tree.yml")
     rows = load_ground_truth_rows("data/classified_muse_spark_prompts_4.csv")
-    for index, (backend, transport) in enumerate(BACKENDS):
-        result = run_prompt(rows[rdx], tree, backend, transport, threshold=0.5, base_dir=".")
-        write_jsonl([result], backend, "logs/one_off.jsonl", append=index > 0)
-        print(backend, "->", result["predicted_label"], result["path"])
+
+    if RUNALL:
+        for index, (backend, transport) in enumerate(BACKENDS):
+            results = run_all(rows, tree, backend, transport, base_dir=".")
+            write_jsonl(results, backend, "logs/runs.jsonl")
+    else:
+        rdx = 0     # TEST only the first prompt
+        for index, (backend, transport) in enumerate(BACKENDS):
+            result = run_prompt(rows[rdx], tree, backend, transport, threshold=0.5, base_dir=".")
+            write_jsonl([result], backend, "logs/one_off.jsonl", append=index > 0)
+            print(backend, "->", result["predicted_label"], result["path"])
 
 
 if __name__ == "__main__":
