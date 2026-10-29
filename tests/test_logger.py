@@ -29,7 +29,10 @@ def test_format_row_flattens_runner_result():
     assert row["path"] == "q1"
     assert row["answers"] == "N"
     assert row["predicted_label"] == "end_Unknowable"
-    assert row["expected"] and row["category"]
+    assert row["expected"]
+    # Labels stay out of logs (no-leak rule); the column still exists
+    # so the comparator's side-by-side layout is unchanged.
+    assert row["category"] == ""
     assert set(row) == set(CSV_COLUMNS)
 
 

@@ -38,14 +38,11 @@ def _stub(queue, calls=None):
 def test_load_ground_truth_rows():
     rows = load_ground_truth_rows(CSV_PATH)
     assert len(rows) == 50
-    assert {row["category"] for row in rows} == {
-        "Unknowable",
-        "Unverifiable Minimal",
-        "Verifiable Minimal",
-        "Verifiable",
-        "Unverifiable",
-    }
     assert all(row["prompt_text"] and row["expected"] for row in rows)
+    # No-leak rule: ground-truth labels stay out of runner rows entirely.
+    # The comparator joins them from the CSV at compare time instead
+    # (the 5-label coverage now lives in tests/test_comparator.py).
+    assert all("category" not in row for row in rows)
 
 
 def test_n_at_q1_ends_chain_in_one_call():
@@ -58,6 +55,8 @@ def test_n_at_q1_ends_chain_in_one_call():
     assert result["predicted_label"] == "end_Unknowable"
     assert result["stop_step"] == "q1"
     assert calls == ["q1"]
+    # Even a caller-supplied label must not propagate into the result.
+    assert "category" not in result
 
 
 @pytest.mark.parametrize(
@@ -121,7 +120,7 @@ def test_max_depth_caps_calls_on_deeper_tree():
     assert result["predicted_label"] == "undecided"
 
 
-def test_run_all_keeps_ground_truth_attached():
+def test_run_all_keeps_expected_attached_without_labels():
     rows = load_ground_truth_rows(CSV_PATH)[:3]
     [first, second, third] = rows
     queues = {
@@ -129,8 +128,10 @@ def test_run_all_keeps_ground_truth_attached():
         second["prompt_text"]: [("Y", 0.9), ("Y", 0.8), ("N", 0.7)],
         third["prompt_text"]: [("Y", 0.9), ("N", 0.8), ("Y", 0.7)],
     }
+    seen_requests = []
 
     def transport(request):
+        seen_requests.append(request)
         answer, confidence = queues[request["prompt"]].pop(0)
         return {"answer": answer, "p": confidence}
 
@@ -143,4 +144,9 @@ def test_run_all_keeps_ground_truth_attached():
     ]
     for row, result in zip(rows, results):
         assert result["expected"] == row["expected"]
-        assert result["category"] == row["category"]
+        assert "category" not in result
+    # Nothing the model sees may carry ground-truth answers.
+    assert seen_requests
+    for request in seen_requests:
+        assert "category" not in request
+        assert "expected" not in request
