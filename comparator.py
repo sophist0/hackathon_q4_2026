@@ -65,13 +65,14 @@ def parse_confidences(row: Mapping[str, Any]) -> list[float]:
 
 GROUND_TRUTH_COLUMNS = {
     "prompt_text": "Prompts",
+    "response": "Response",
     "expected": "Expected Request Response",
     "category": "Categorization",
 }
 
 
-GroundTruth = dict[tuple[str, str], list[dict[str, str]]]
-"""Ground truth index: ``(prompt_text, expected)`` -> candidate entries.
+GroundTruth = dict[(str, str), list[dict[str, str]]]
+"""Ground truth index: ``prompt_text`` -> candidate entries.
 
 The key is composite because the same prompt can appear under several
 ground-truth variants (e.g. with and without the ``/logs`` echo, each with
@@ -94,9 +95,11 @@ def load_ground_truth(csv_path: str | Path) -> GroundTruth:
             prompt_text = (record.get(GROUND_TRUTH_COLUMNS["prompt_text"]) or "").strip()
             if not prompt_text:
                 continue
+            response = (record.get(GROUND_TRUTH_COLUMNS["response"]) or "").strip()
             expected = (record.get(GROUND_TRUTH_COLUMNS["expected"]) or "").strip()
-            truth[(prompt_text, expected)].append(
+            truth[(prompt_text, response)].append(
                 {
+                    "response": response,
                     "expected": expected,
                     "category": (record.get(GROUND_TRUTH_COLUMNS["category"]) or "").strip(),
                 }
@@ -187,7 +190,7 @@ def compare(
         if prompt and backend:
             # Keep each logged (prompt, expected) variant separate so twin
             # ground-truth variants score against their own run.
-            by_variant[(prompt, str(row.get("expected", "")))][backend].append(row)
+            by_variant[(prompt, str(row.get("response", "")))][backend].append(row)
 
     result = Comparison()
     confidences: dict[str, list[float]] = defaultdict(list)
@@ -252,11 +255,12 @@ def _pct(value: float | None) -> str:
 
 def format_report(comparison: Comparison) -> str:
     """Render a plain-text per-category accuracy table plus diverge list."""
-    lines = ["backend: correct/n (accuracy)"]
+    lines = ["\nbackend: correct/n (accuracy)\n"]
     for backend in sorted(comparison.per_backend):
         score = comparison.per_backend[backend]
         lines.append(f"  {backend}: {score.correct}/{score.n} ({_pct(score.accuracy)})")
-    lines.append("per-category accuracy:")
+
+    lines.append("\nper-category accuracy:\n")
     for category in sorted(comparison.per_category):
         cells = "  ".join(
             f"{backend} {score.correct}/{score.n} ({_pct(score.accuracy)})"
@@ -264,19 +268,20 @@ def format_report(comparison: Comparison) -> str:
         )
         lines.append(f"  {category}: {cells}")
     lines.append(
-        f"agreement: {comparison.agreement_agree}/{comparison.agreement_n}"
-        f" ({_pct(comparison.agreement_rate)})"
+        f"\nagreement: {comparison.agreement_agree}/{comparison.agreement_n} "
+        f" ({_pct(comparison.agreement_rate)})\n"
     )
-    lines.append(f"diverged ({len(comparison.diverged)}):")
+    lines.append(f"\ndiverged ({len(comparison.diverged)}):\n")
     lines.extend(f"  - {prompt}" for prompt in comparison.diverged)
-    lines.append(f"all backends missed ({len(comparison.all_missed)}):")
+    lines.append(f"\nall backends missed ({len(comparison.all_missed)}):\n")
     lines.extend(f"  - {prompt}" for prompt in comparison.all_missed)
     if comparison.ambiguous:
-        lines.append(f"ambiguous truth variants ({len(comparison.ambiguous)}):")
+        lines.append(f"\nambiguous truth variants ({len(comparison.ambiguous)}):\n")
         lines.extend(f"  - {prompt}" for prompt in comparison.ambiguous)
     if comparison.unscored:
-        lines.append(f"unscored, no ground truth ({len(comparison.unscored)}):")
+        lines.append(f"\nunscored, no ground truth ({len(comparison.unscored)}):\n")
         lines.extend(f"  - {prompt}" for prompt in comparison.unscored)
+    lines.append("\n")
     return "\n".join(lines)
 
 
