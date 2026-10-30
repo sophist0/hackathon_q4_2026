@@ -1,12 +1,12 @@
 """One-off single-row classification across all three backends.
 
 No keys or endpoints live in this file. Provide them via the environment:
-  JEV_API_URL, JEV_API_KEY      - Jev typed yes/no endpoint
-  CLEF_API_URL, CLEF_API_KEY    - Clef-flash endpoint (Jev-compatible shape)
-  META_API_KEY                  - Muse Spark key (Meta Model API)
+  JEV_API_URL, JEV_API_KEY                  - Jev typed yes/no endpoint
+  CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN - Clef-flash on Workers AI
+  META_API_KEY                              - Muse Spark key (Meta Model API)
 
 Each transport below posts the decider-built request for its backend and
-normalizes the reply to what decide() expects. Anything outside that shape
+returns the raw reply for decide() to normalize. Anything outside that shape
 (Y/N answers, 0-1 confidences) raises rather than mislabeling.
 """
 
@@ -44,10 +44,31 @@ def jev_transport(request):
     return {"answer": reply["answer"], "p": float(reply["p"])}
 
 
+CLEF_MODEL_ID = "@cf/cloudflare/clef-flash"
+
+
 def clef_transport(request):
-    """Clef-flash: Jev-compatible API, same request/reply shape as Jev."""
-    reply = _post_json(os.environ["CLEF_API_URL"], request, os.environ["CLEF_API_KEY"])
-    return {"answer": reply["answer"], "p": float(reply["p"])}
+    """Clef-flash on Workers AI: native System One noul request.
+
+    ``request`` is the decider-built body (``build_clef_request``):
+    ``{"model": "clef-flash", "state": ..., "questions": ...}``.
+    Returns the raw result dict for ``normalize_clef_reply`` (unwraps the
+    outer ``{"result": ...}`` envelope when present).
+    """
+    account_id = os.environ["CLOUDFLARE_ACCOUNT_ID"]
+    api_token = os.environ.get("CLOUDFLARE_API_TOKEN") or os.environ.get(
+        "CLOUDFLARE_AUTH_TOKEN"
+    )
+    if not api_token:
+        raise KeyError("CLOUDFLARE_API_TOKEN")
+    url = (
+        f"https://api.cloudflare.com/client/v4/accounts/{account_id}"
+        f"/ai/run/{CLEF_MODEL_ID}"
+    )
+    reply = _post_json(url, request, api_token)
+    if isinstance(reply, dict) and isinstance(reply.get("result"), dict):
+        return reply["result"]
+    return reply
 
 
 def spark_transport(request):
@@ -76,7 +97,7 @@ def spark_transport(request):
 
 BACKENDS = (
 #("jev", jev_transport),
-#("clef-flash", clef_transport),
+("clef-flash", clef_transport),
 ("spark-as-jev", spark_transport),
 )
 

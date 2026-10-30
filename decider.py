@@ -187,10 +187,32 @@ def build_jev_request(state: DeciderState, question: Question, context_text: str
     }
 
 
+CLEF_MODEL = "clef-flash"
+CLEF_MODEL_ID = "@cf/cloudflare/clef-flash"
+
+
+def _clef_state_text(state: DeciderState, context_text: str) -> str:
+    parts = [
+        f"System: {state.system.name}",
+        f"Spec:\n{context_text}" if context_text else "Spec: (assumed known)",
+        f"User prompt: {state.prompt_text}",
+    ]
+    if state.response:
+        parts.append(f"Response: {state.response}")
+    if state.expected:
+        parts.append(f"Expected: {state.expected}")
+    return "\n".join(parts)
+
+
 def build_clef_request(state: DeciderState, question: Question, context_text: str) -> dict:
-    request = build_jev_request(state, question, context_text)
-    request["backend"] = "clef-flash"
-    return request
+    """Build a native Workers AI Clef-flash request (System One noul shape)."""
+    return {
+        "model": CLEF_MODEL,
+        "state": _clef_state_text(state, context_text),
+        "questions": {
+            question.id: {"type": "noul", "instructions": question.text},
+        },
+    }
 
 
 def build_spark_request(state: DeciderState, question: Question, context_text: str) -> dict:
@@ -213,11 +235,46 @@ def normalize_jev_reply(raw: Mapping[str, Any]) -> Decision:
     return Decision(answer=answer, p=_check_p(raw.get("p"), "jev"))
 
 
-def normalize_clef_reply(raw: Mapping[str, Any]) -> Decision:
-    answer = raw.get("answer")
+def normalize_clef_reply(raw: Mapping[str, Any], question_id: str | None = None) -> Decision:
+    """Normalize a Clef-flash reply to ``{answer, p}``.
+
+    Native Workers AI shape (possibly wrapped in ``{"result": ...}``)::
+
+        {"answers": {"q1": {"type": "noul", "noul": 0.9}}}
+
+    ``noul`` is P(yes), so Y is chosen at >= 0.5 and ``p`` is the
+    confidence in the chosen answer. The legacy Jev-compatible proxy
+    shape ``{"answer": "Y"/"N", "p": ...}`` is still accepted.
+    """
+    if not isinstance(raw, Mapping):
+        raise BadDeciderReply(f"clef-flash reply must be a mapping: {raw!r}")
+    payload: Mapping[str, Any] = raw
+    result = payload.get("result")
+    if isinstance(result, Mapping) and "answers" in result:
+        payload = result
+    answers = payload.get("answers")
+    if isinstance(answers, Mapping):
+        if question_id is not None and question_id in answers:
+            entry = answers[question_id]
+        elif len(answers) == 1:
+            entry = next(iter(answers.values()))
+        else:
+            raise BadDeciderReply(
+                f"clef-flash reply missing answer for {question_id!r}: {answers!r}"
+            )
+        if not isinstance(entry, Mapping):
+            raise BadDeciderReply(f"clef-flash reply has invalid entry: {entry!r}")
+        if entry.get("type", "noul") != "noul":
+            raise BadDeciderReply(f"clef-flash reply has invalid type: {entry!r}")
+        noul = _check_p(entry.get("noul"), "clef-flash")
+        if noul >= 0.5:
+            return Decision(answer="Y", p=noul)
+        return Decision(answer="N", p=1.0 - noul)
+    # Legacy Jev-compatible proxy shape.
+    answer = payload.get("answer")
     if answer not in ("Y", "N"):
         raise BadDeciderReply(f"clef-flash reply has invalid answer: {answer!r}")
-    return Decision(answer=answer, p=_check_p(raw.get("p"), "clef-flash"))
+    return Decision(answer=answer, p=_check_p(payload.get("p"), "clef-flash"))
 
 
 def normalize_spark_reply(raw: Mapping[str, Any], threshold: float = 0.5) -> Decision:
@@ -250,7 +307,10 @@ def decide(
     if backend == "jev":
         return normalize_jev_reply(transport(build_jev_request(state, question, context_text)))
     if backend == "clef-flash":
-        return normalize_clef_reply(transport(build_clef_request(state, question, context_text)))
+        return normalize_clef_reply(
+            transport(build_clef_request(state, question, context_text)),
+            question_id=question.id,
+        )
     if backend == "spark-as-jev":
         return normalize_spark_reply(
             transport(build_spark_request(state, question, context_text)),

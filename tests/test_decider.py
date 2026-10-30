@@ -102,17 +102,65 @@ def test_decide_jev_yes_no_passthrough():
     assert (no.answer, no.p) == ("N", 0.7)
 
 
-def test_decide_clef_flash_same_shape():
+def test_decide_clef_flash_native_shape():
+    from decider import build_clef_request
+
     tree = load_tree(TREE_PATH)
     seen = {}
 
     def transport(request):
         seen.update(request)
-        return {"answer": "N", "p": 0.6}
+        return {"answers": {"q1": {"type": "noul", "noul": 0.9}}}
 
     decision = decide(_state(), _question(tree, "q1"), "clef-flash", transport)
-    assert decision == decide(_state(), _question(tree, "q1"), "jev", lambda req: {"answer": "N", "p": 0.6})
-    assert seen["backend"] == "clef-flash"
+    assert (decision.answer, decision.p) == ("Y", 0.9)
+    assert seen["model"] == "clef-flash"
+    assert seen["questions"]["q1"]["type"] == "noul"
+    assert "state" in seen
+
+
+def test_build_clef_request_carries_state_and_question():
+    from decider import build_clef_request
+
+    tree = load_tree(TREE_PATH)
+    state = DeciderState(
+        system=tree.system,
+        prompt_text="How do I add 5 and 7?",
+        response="GET /add/5/7",
+        expected="12",
+    )
+    request = build_clef_request(state, _question(tree, "q2"), "spec text")
+    assert request["model"] == "clef-flash"
+    assert "How do I add 5 and 7?" in request["state"]
+    assert "spec text" in request["state"]
+    assert request["questions"]["q2"]["instructions"] == _question(tree, "q2").text
+
+
+def test_normalize_clef_noul_maps_to_confidence():
+    from decider import normalize_clef_reply
+
+    yes = normalize_clef_reply(
+        {"answers": {"q1": {"type": "noul", "noul": 0.9}}}, question_id="q1"
+    )
+    assert (yes.answer, yes.p) == ("Y", 0.9)
+    no = normalize_clef_reply(
+        {"answers": {"q1": {"type": "noul", "noul": 0.2}}}, question_id="q1"
+    )
+    assert (no.answer, no.p) == ("N", pytest.approx(0.8))
+    wrapped = normalize_clef_reply(
+        {"result": {"answers": {"q1": {"type": "noul", "noul": 0.7}}}},
+        question_id="q1",
+    )
+    assert (wrapped.answer, wrapped.p) == ("Y", 0.7)
+
+
+def test_normalize_clef_legacy_proxy_shape_still_accepted():
+    from decider import normalize_clef_reply
+
+    decision = normalize_clef_reply({"answer": "N", "p": 0.6})
+    assert (decision.answer, decision.p) == ("N", 0.6)
+    with pytest.raises(BadDeciderReply):
+        normalize_clef_reply({"answers": {}}, question_id="q1")
 
 
 def test_decide_spark_abstains_below_threshold():

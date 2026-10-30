@@ -30,7 +30,7 @@ pip install -r requirements.txt
 nothing secret lives in the repo:
 
 - `JEV_API_URL`, `JEV_API_KEY` — Jev endpoint
-- `CLEF_API_URL`, `CLEF_API_KEY` — Clef-flash endpoint
+- `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` — Clef-flash on Workers AI
 - `META_API_KEY` — Muse Spark key (Meta Model API)
 
 ### Option A: per-shell exports (recommended, nothing on disk)
@@ -38,8 +38,8 @@ nothing secret lives in the repo:
 ```bash
 export JEV_API_URL="https://..."
 export JEV_API_KEY="..."
-export CLEF_API_URL="https://..."
-export CLEF_API_KEY="..."
+export CLOUDFLARE_ACCOUNT_ID="..."
+export CLOUDFLARE_API_TOKEN="..."
 export META_API_KEY="..."
 
 python run_prompt_classifier.py
@@ -67,6 +67,37 @@ printf 'META_API_KEY="..."\n' > .env   # local only, never commit
 set -a; source .env; set +a
 python run_prompt_classifier.py
 ```
+
+### Setting up Clef-flash on Cloudflare Workers AI
+
+Clef-flash runs on Workers AI, not on a standalone endpoint. You call the
+Cloudflare REST API directly from this repo — no Worker to deploy.
+
+1. Sign in to Cloudflare (free is fine to start) and note your account ID
+   from the dashboard URL or Workers overview page.
+2. Create an API token from the dashboard Workers AI page using the
+   Create Workers AI API Token template. Copy the token once.
+3. Export both values in the same shell before running:
+
+```bash
+export CLOUDFLARE_ACCOUNT_ID="..."
+export CLOUDFLARE_API_TOKEN="..."
+python -c "import os; print('Clef env set:', bool(os.environ.get('CLOUDFLARE_ACCOUNT_ID')) and bool(os.environ.get('CLOUDFLARE_API_TOKEN')))"
+```
+
+The classifier posts to
+`https://api.cloudflare.com/client/v4/accounts/<account>/ai/run/@cf/cloudflare/clef-flash`
+with body `{"model": "clef-flash", "state": ..., "questions": ...}` and reads
+the `noul` probability back as Y (at 0.5 or above) or N. The older
+`CLEF_API_URL` and `CLEF_API_KEY` variables belong to the legacy Jev-compatible
+proxy shape and are no longer read. An older `CLOUDFLARE_AUTH_TOKEN` value is
+still accepted as a fallback if `CLOUDFLARE_API_TOKEN` is unset.
+
+Billing note: the same free Cloudflare account covers testing. Workers Free
+includes 10,000 Workers AI Neurons per day and 100,000 requests per day. Past
+that daily amount, upgrade that account to Workers Paid, which is pay-as-you-go
+($5 per month minimum, then usage rates). Clef-flash bills per input token
+only; output is not billed.
 
 ### How not to leak a key
 
@@ -148,7 +179,7 @@ threshold:
 # Jev (reference decider): reply {"answer": "Y"/"N", "p": 0.0-1.0}
 run_all(rows, tree, "jev", jev_transport, base_dir=".")
 
-# Clef-flash: same Jev-compatible reply shape
+# Clef-flash on Workers AI: native System One noul shape
 run_all(rows, tree, "clef-flash", clef_transport, base_dir=".")
 
 # Muse Spark as Jev: reply {"answer": "Y"/"N", "confidence": 0.0-1.0};
