@@ -155,3 +155,35 @@ Walk-through (predicted label vs ground truth):
 - Exact 3 questions for the single `User Prompt` tree.
 - Confidence threshold for Spark abstention.
 - Whether `/logs`-dependent rows run from a clean service state.
+
+## Decider improvement hypotheses (from Spark-as-Jev run: 9/50, ~all misses at q1-N)
+
+Constraint: q1 stays system-generic. Specificity lives in the `system`
+block (name + injected spec), not in question text, so the same tree
+covers the adder, Linux, or another target by swapping `system`. The
+observed q1 failure looks like wording ambiguity (what counts as
+"the system's current state"?) rather than missing specificity. To be
+settled empirically: rerun a generic-reworded q1 vs a system-named q1
+across backends and compare.
+
+- **H1 — q1 wording, not q1 specificity.** Spark answers N to q1
+  ("only depend on the system's current state?") for nearly every
+  prompt, ending at `end_Unknowable`. Rewrite the distinction to be
+  crisp while staying generic (e.g. "answerable from the system's
+  specified behavior alone?"), leaning on the injected spec.
+- **H2 — bare Spark prompt.** No examples, no real schema, and a
+  0.5 threshold on uncalibrated self-reported confidence. Add one
+  worked example per question, enforce the JSON shape, and set the
+  threshold from the comparator's confidence histograms.
+- **H3 — path-blind questions.** Each `decide()` call sees no path
+  history (q2 doesn't know q1 answered Y). Consider passing prior
+  answers for weaker models.
+- **H4 — state now carries Response + Expected.** q3/q4 ask about
+  "the response", which the model previously never saw, so they should
+  move. Caveat: `Expected` is the answer key — scores measured with it
+  in context test "classify given the answer". Compare with/without
+  `expected` to size the leak effect.
+
+Next experiment before any edit: run all three backends once and read
+the comparator side-by-side. Shared q1 failure across Jev/Clef/Spark
+means the tree (H1); Spark-only failure means the adapter (H2).

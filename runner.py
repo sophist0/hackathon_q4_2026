@@ -101,7 +101,7 @@ def run_all(rows, tree, backend, transport, threshold=0.5, base_dir=None):
     print(f"processing {total} prompts with backend {backend}")
     results = []
     for number, row in enumerate(pending, start=1):
-        print(f"{number}: [{number}/{total}] {row['prompt_text'][:60]}")
+        print(f"[{number}/{total}] {row['prompt_text'][:60]}")
         results.append(
             run_prompt(row, tree, backend, transport, threshold=threshold, base_dir=base_dir)
         )
