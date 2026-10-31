@@ -5,7 +5,7 @@ runner, and the result logger from `docs/design_draft.md`, driven by
 `question_tree.yml` (the tree file wins where they disagree).
 
 - `decider.py` — tree loading, context resolution, one-question-per-backend
-  adapters (`jev`, `clef-flash`, `spark-as-jev`).
+  adapters (`jev`, `clef-flash`, `clef`, `spark-as-jev`).
 - `runner.py` — walks one prompt (`run_prompt`) or a batch (`run_all`)
   down the tree, at most `max_depth` (3) decider calls per prompt.
 - `logger.py` — persists per-prompt results as JSONL (`write_jsonl`) or
@@ -86,12 +86,18 @@ python -c "import os; print('Clef env set:', bool(os.environ.get('CLOUDFLARE_ACC
 ```
 
 The classifier posts to
-`https://api.cloudflare.com/client/v4/accounts/<account>/ai/run/@cf/cloudflare/clef-flash`
-with body `{"model": "clef-flash", "state": ..., "questions": ...}` and reads
-the `noul` probability back as Y (at 0.5 or above) or N. The older
+`https://api.cloudflare.com/client/v4/accounts/<account>/ai/run/@cf/cloudflare/<model>`
+with body `{"model": "clef-flash" | "clef", "state": ..., "questions": ...}`
+and reads the `noul` probability back as Y (at 0.5 or above) or N. The older
 `CLEF_API_URL` and `CLEF_API_KEY` variables belong to the legacy Jev-compatible
 proxy shape and are no longer read. An older `CLOUDFLARE_AUTH_TOKEN` value is
 still accepted as a fallback if `CLOUDFLARE_API_TOKEN` is unset.
+
+Both Clef models share the same credentials and transport: pick the backend
+(`clef-flash` or `clef`) and the endpoint follows the request. Full `clef`
+is the slower 27B model at about six times the input-token price, so it is
+commented out in `BACKENDS` — uncomment the `("clef", clef_transport)` line
+in [run_prompt_classifier.py](/home/old/projects/meta_hackathon/run_prompt_classifier.py) to run it.
 
 Billing note: the same free Cloudflare account covers testing. Workers Free
 includes 10,000 Workers AI Neurons per day and 100,000 requests per day. Past
@@ -181,6 +187,9 @@ run_all(rows, tree, "jev", jev_transport, base_dir=".")
 
 # Clef-flash on Workers AI: native System One noul shape
 run_all(rows, tree, "clef-flash", clef_transport, base_dir=".")
+
+# Full Clef (27B): same transport, model follows the backend name
+run_all(rows, tree, "clef", clef_transport, base_dir=".")
 
 # Muse Spark as Jev: reply {"answer": "Y"/"N", "confidence": 0.0-1.0};
 # confidence below threshold becomes "abstain" (default threshold 0.5)

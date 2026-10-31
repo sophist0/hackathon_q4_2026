@@ -136,6 +136,35 @@ def test_build_clef_request_carries_state_and_question():
     assert request["questions"]["q2"]["instructions"] == _question(tree, "q2").text
 
 
+def test_build_clef_request_supports_full_clef_model():
+    from decider import build_clef_request
+
+    tree = load_tree(TREE_PATH)
+    state = DeciderState(
+        system=tree.system,
+        prompt_text="How do I add 5 and 7?",
+        response="GET /add/5/7",
+        expected="12",
+    )
+    request = build_clef_request(state, _question(tree, "q1"), "spec text", model="clef")
+    assert request["model"] == "clef"
+    assert "How do I add 5 and 7?" in request["state"]
+
+
+def test_decide_full_clef_backend():
+    tree = load_tree(TREE_PATH)
+    seen = {}
+
+    def transport(request):
+        seen.update(request)
+        return {"answers": {"q1": {"type": "noul", "noul": 0.2}}}
+
+    decision = decide(_state(), _question(tree, "q1"), "clef", transport)
+    assert decision.answer == "N"
+    assert decision.p == pytest.approx(0.8)
+    assert seen["model"] == "clef"
+
+
 def test_normalize_clef_noul_maps_to_confidence():
     from decider import normalize_clef_reply
 

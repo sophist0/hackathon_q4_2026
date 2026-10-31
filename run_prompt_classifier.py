@@ -44,17 +44,24 @@ def jev_transport(request):
     return {"answer": reply["answer"], "p": float(reply["p"])}
 
 
-CLEF_MODEL_ID = "@cf/cloudflare/clef-flash"
+CLEF_MODEL_IDS = {
+    "clef-flash": "@cf/cloudflare/clef-flash",
+    "clef": "@cf/cloudflare/clef",
+}
 
 
 def clef_transport(request):
-    """Clef-flash on Workers AI: native System One noul request.
+    """Clef on Workers AI: native System One noul request.
 
     ``request`` is the decider-built body (``build_clef_request``):
-    ``{"model": "clef-flash", "state": ..., "questions": ...}``.
-    Returns the raw result dict for ``normalize_clef_reply`` (unwraps the
-    outer ``{"result": ...}`` envelope when present).
+    ``{"model": "clef-flash" | "clef", "state": ..., "questions": ...}``.
+    The endpoint follows the request's ``model`` so one transport serves
+    both backends. Returns the raw result dict for ``normalize_clef_reply``
+    (unwraps the outer ``{"result": ...}`` envelope when present).
     """
+    model = request.get("model", "clef-flash")
+    if model not in CLEF_MODEL_IDS:
+        raise ValueError(f"unknown Clef model: {model!r}")
     account_id = os.environ["CLOUDFLARE_ACCOUNT_ID"]
     api_token = os.environ.get("CLOUDFLARE_API_TOKEN") or os.environ.get(
         "CLOUDFLARE_AUTH_TOKEN"
@@ -63,7 +70,7 @@ def clef_transport(request):
         raise KeyError("CLOUDFLARE_API_TOKEN")
     url = (
         f"https://api.cloudflare.com/client/v4/accounts/{account_id}"
-        f"/ai/run/{CLEF_MODEL_ID}"
+        f"/ai/run/{CLEF_MODEL_IDS[model]}"
     )
     reply = _post_json(url, request, api_token)
     if isinstance(reply, dict) and isinstance(reply.get("result"), dict):
@@ -97,7 +104,8 @@ def spark_transport(request):
 
 BACKENDS = (
 #("jev", jev_transport),
-("clef-flash", clef_transport),
+#("clef-flash", clef_transport),
+("clef", clef_transport),  # full 27B Clef: slower, ~6x the input-token price
 #("spark-as-jev", spark_transport),
 )
 

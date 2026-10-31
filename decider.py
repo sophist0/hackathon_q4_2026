@@ -18,9 +18,9 @@ from typing import Any, Literal
 import yaml
 
 Answer = Literal["Y", "N", "abstain"]
-BackendName = Literal["jev", "clef-flash", "spark-as-jev"]
+BackendName = Literal["jev", "clef-flash", "clef", "spark-as-jev"]
 
-BACKENDS: tuple[str, ...] = ("jev", "clef-flash", "spark-as-jev")
+BACKENDS: tuple[str, ...] = ("jev", "clef-flash", "clef", "spark-as-jev")
 
 LEAF_PREFIX = "end_"
 
@@ -187,8 +187,14 @@ def build_jev_request(state: DeciderState, question: Question, context_text: str
     }
 
 
-CLEF_MODEL = "clef-flash"
-CLEF_MODEL_ID = "@cf/cloudflare/clef-flash"
+CLEF_FLASH_MODEL = "clef-flash"
+CLEF_FLASH_MODEL_ID = "@cf/cloudflare/clef-flash"
+CLEF_MODEL = "clef"
+CLEF_MODEL_ID = "@cf/cloudflare/clef"
+CLEF_MODEL_IDS = {
+    CLEF_FLASH_MODEL: CLEF_FLASH_MODEL_ID,
+    CLEF_MODEL: CLEF_MODEL_ID,
+}
 
 
 def _clef_state_text(state: DeciderState, context_text: str) -> str:
@@ -204,10 +210,17 @@ def _clef_state_text(state: DeciderState, context_text: str) -> str:
     return "\n".join(parts)
 
 
-def build_clef_request(state: DeciderState, question: Question, context_text: str) -> dict:
-    """Build a native Workers AI Clef-flash request (System One noul shape)."""
+def build_clef_request(
+    state: DeciderState,
+    question: Question,
+    context_text: str,
+    model: str = CLEF_FLASH_MODEL,
+) -> dict:
+    """Build a native Workers AI Clef request (System One noul shape)."""
+    if model not in CLEF_MODEL_IDS:
+        raise ValueError(f"unknown Clef model: {model!r}")
     return {
-        "model": CLEF_MODEL,
+        "model": model,
         "state": _clef_state_text(state, context_text),
         "questions": {
             question.id: {"type": "noul", "instructions": question.text},
@@ -235,8 +248,12 @@ def normalize_jev_reply(raw: Mapping[str, Any]) -> Decision:
     return Decision(answer=answer, p=_check_p(raw.get("p"), "jev"))
 
 
-def normalize_clef_reply(raw: Mapping[str, Any], question_id: str | None = None) -> Decision:
-    """Normalize a Clef-flash reply to ``{answer, p}``.
+def normalize_clef_reply(
+    raw: Mapping[str, Any],
+    question_id: str | None = None,
+    backend: str = CLEF_FLASH_MODEL,
+) -> Decision:
+    """Normalize a Clef reply to ``{answer, p}``.
 
     Native Workers AI shape (possibly wrapped in ``{"result": ...}``)::
 
@@ -247,7 +264,7 @@ def normalize_clef_reply(raw: Mapping[str, Any], question_id: str | None = None)
     shape ``{"answer": "Y"/"N", "p": ...}`` is still accepted.
     """
     if not isinstance(raw, Mapping):
-        raise BadDeciderReply(f"clef-flash reply must be a mapping: {raw!r}")
+        raise BadDeciderReply(f"{backend} reply must be a mapping: {raw!r}")
     payload: Mapping[str, Any] = raw
     result = payload.get("result")
     if isinstance(result, Mapping) and "answers" in result:
@@ -260,21 +277,21 @@ def normalize_clef_reply(raw: Mapping[str, Any], question_id: str | None = None)
             entry = next(iter(answers.values()))
         else:
             raise BadDeciderReply(
-                f"clef-flash reply missing answer for {question_id!r}: {answers!r}"
+                f"{backend} reply missing answer for {question_id!r}: {answers!r}"
             )
         if not isinstance(entry, Mapping):
-            raise BadDeciderReply(f"clef-flash reply has invalid entry: {entry!r}")
+            raise BadDeciderReply(f"{backend} reply has invalid entry: {entry!r}")
         if entry.get("type", "noul") != "noul":
-            raise BadDeciderReply(f"clef-flash reply has invalid type: {entry!r}")
-        noul = _check_p(entry.get("noul"), "clef-flash")
+            raise BadDeciderReply(f"{backend} reply has invalid type: {entry!r}")
+        noul = _check_p(entry.get("noul"), backend)
         if noul >= 0.5:
             return Decision(answer="Y", p=noul)
         return Decision(answer="N", p=1.0 - noul)
     # Legacy Jev-compatible proxy shape.
     answer = payload.get("answer")
     if answer not in ("Y", "N"):
-        raise BadDeciderReply(f"clef-flash reply has invalid answer: {answer!r}")
-    return Decision(answer=answer, p=_check_p(payload.get("p"), "clef-flash"))
+        raise BadDeciderReply(f"{backend} reply has invalid answer: {answer!r}")
+    return Decision(answer=answer, p=_check_p(payload.get("p"), backend))
 
 
 def normalize_spark_reply(raw: Mapping[str, Any], threshold: float = 0.5) -> Decision:
@@ -306,10 +323,11 @@ def decide(
     context_text = resolve_context(state.system, base_dir=base_dir)
     if backend == "jev":
         return normalize_jev_reply(transport(build_jev_request(state, question, context_text)))
-    if backend == "clef-flash":
+    if backend in CLEF_MODEL_IDS:
         return normalize_clef_reply(
-            transport(build_clef_request(state, question, context_text)),
+            transport(build_clef_request(state, question, context_text, model=backend)),
             question_id=question.id,
+            backend=backend,
         )
     if backend == "spark-as-jev":
         return normalize_spark_reply(
