@@ -192,7 +192,7 @@ def test_decide_full_clef_backend():
     assert seen["model"] == "clef"
 
 
-def test_system_one_state_labels_llm_roles():
+def test_system_one_state_uses_llm_field_labels():
     from decider import build_clef_request
 
     tree = load_tree(TREE_PATH)
@@ -204,8 +204,7 @@ def test_system_one_state_labels_llm_roles():
     )
     text = build_clef_request(state, _question(tree, "q1"), "spec text")["state"]
     assert "LLM_response:" in text
-    assert "LLM_expected_system_output:" in text
-    assert "commands" in text
+    assert "expected_system_output:" in text
 
 
 def test_normalize_clef_noul_maps_to_confidence():

@@ -18,7 +18,7 @@ questions:
     on_Y: q2
     on_N: end_Unknowable
   - id: q2
-    text: "Given the prompt, can the LLM_expected_system_output be evaluated for correctness? (Y/N)"
+    text: "Given the prompt, can the expected_system_output be evaluated for correctness? (Y/N)"
     on_Y: q3
     on_N: q4
   - id: q3

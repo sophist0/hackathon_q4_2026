@@ -98,13 +98,10 @@ def spark_transport(request):
     """Muse Spark as Jev: JSON prompt forcing {answer, confidence}."""
     prompt = (
         f"System: {request['system']}\n"
-        "Context: A user prompted an LLM. The LLM responded with commands to"
-        " interact with the system (LLM_response) and stated what it expects"
-        " the system's response to be (LLM_expected_system_output).\n"
         f"Spec:\n{request['context']}\n"
         f"User prompt: {request['user_prompt']}\n"
         f"LLM_response: {request.get('response', '')}\n"
-        f"LLM_expected_system_output: {request.get('expected', '')}\n"
+        f"expected_system_output: {request.get('expected', '')}\n"
         f"Question (answer Y or N): {request['question']}\n"
         'Reply as JSON only: {"answer": "Y" or "N", "confidence": 0.0-1.0}'
     )
