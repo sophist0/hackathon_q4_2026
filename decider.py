@@ -203,7 +203,9 @@ JEV_MODEL = "jev-latest"
 
 def build_jev_request(state: DeciderState, question: Question, context_text: str) -> dict:
     """Build a native TypeSafe Jev request (System One noul shape)."""
-    state_text = _system_one_state_text(state, context_text)
+    state_text = _system_one_state_text(
+        state, context_text, include_expected=question.id == "q2"
+    )
     if question.examples:
         state_text += "\n" + _format_examples(question)
     return {
@@ -225,17 +227,22 @@ CLEF_MODEL_IDS = {
 }
 
 
-def _system_one_state_text(state: DeciderState, context_text: str) -> str:
+def _system_one_state_text(
+    state: DeciderState, context_text: str, include_expected: bool = False
+) -> str:
     parts = [
         f"System: {state.system.name}",
         f"Spec:\n{context_text}" if context_text else "Spec: (assumed known)",
         f"User prompt: {state.prompt_text}",
     ]
     # Expected stays out of the model state by design (H4 ablation): it is
-    # the answer key, and q2 must judge evaluability without seeing it. The
-    # runner still logs it per row so the comparator can score against it.
+    # the answer key. q2 alone sees it, to test whether the output's
+    # presence restores any discrimination there. The runner still logs it
+    # per row so the comparator can score against it.
     if state.response:
         parts.append(f"LLM_response: {state.response}")
+    if include_expected and state.expected:
+        parts.append(f"expected_system_output: {state.expected}")
     return "\n".join(parts)
 
 
@@ -261,7 +268,9 @@ def build_clef_request(
     """Build a native Workers AI Clef request (System One noul shape)."""
     if model not in CLEF_MODEL_IDS:
         raise ValueError(f"unknown Clef model: {model!r}")
-    state_text = _system_one_state_text(state, context_text)
+    state_text = _system_one_state_text(
+        state, context_text, include_expected=question.id == "q2"
+    )
     if question.examples:
         state_text += "\n" + _format_examples(question)
     return {
@@ -282,6 +291,7 @@ def build_spark_request(state: DeciderState, question: Question, context_text: s
         "response": state.response,
         "expected": state.expected,
         "question": question.text,
+        "question_id": question.id,
         "examples": _format_examples(question),
         "response_format": {"answer": "Y|N", "confidence": "[0,1]"},
     }

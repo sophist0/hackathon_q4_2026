@@ -192,6 +192,23 @@ def test_decide_full_clef_backend():
     assert seen["model"] == "clef"
 
 
+def test_expected_shown_for_q2_only():
+    from decider import build_clef_request
+
+    tree = load_tree(TREE_PATH)
+    state = DeciderState(
+        system=tree.system,
+        prompt_text="How do I add 5 and 7?",
+        response="GET /add/5/7",
+        expected="12",
+    )
+    q2_text = build_clef_request(state, tree.question_by_id("q2"), "spec")["state"]
+    assert "expected_system_output: 12" in q2_text
+    for qid in ("q1", "q3", "q4"):
+        text = build_clef_request(state, tree.question_by_id(qid), "spec")["state"]
+        assert "expected_system_output:" not in text
+
+
 def test_system_one_state_uses_llm_field_labels():
     from decider import build_clef_request
 

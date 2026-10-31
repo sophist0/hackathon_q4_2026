@@ -96,11 +96,17 @@ def clef_transport(request):
 
 def spark_transport(request):
     """Muse Spark as Jev: JSON prompt forcing {answer, confidence}."""
+    expected_block = (
+        f"expected_system_output: {request.get('expected', '')}\n"
+        if request.get("question_id") == "q2" and request.get("expected", "")
+        else ""
+    )
     prompt = (
         f"System: {request['system']}\n"
         f"Spec:\n{request['context']}\n"
         f"User prompt: {request['user_prompt']}\n"
         f"LLM_response: {request.get('response', '')}\n"
+        f"{expected_block}"
         f"{request.get('examples', '')}\n"
         f"Question (answer Y or N): {request['question']}\n"
         'Reply as JSON only: {"answer": "Y" or "N", "confidence": 0.0-1.0}'

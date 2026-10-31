@@ -19,7 +19,7 @@ questions:
     on_N: end_Unknowable
 
   - id: q2
-    text: "Given the input prompt and LLM_response, can the system output be validated as correct or incorrect without relying on the system being trustworthy? (Y/N)"
+    text: "Do the requests in the LLM_response contain the information to compute the system output? (Y/N)"
     on_Y: q3
     on_N: q4
 

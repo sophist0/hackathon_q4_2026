@@ -166,14 +166,18 @@ def test_run_all_keeps_expected_attached_without_labels():
         assert result["expected"] == row["expected"]
         assert result["row_id"] == row["row_id"]
         assert "category" not in result
-    # Response rides along inside the state text by design; expected
-    # stays out (H4 ablation) while the label stays out of both, so the run
-    # cannot leak the answer key.
+    # Response rides along inside the state text by design; expected is
+    # shown to q2 only (it judges the output) while the label stays out of
+    # both, so the run cannot leak the answer key elsewhere.
     assert seen_requests
     for request in seen_requests:
         assert "category" not in request
         assert set(request["questions"]) <= {"q1", "q2", "q3", "q4"}
-        assert "expected_system_output:" not in request["state"]
+        (question_id,) = request["questions"]
+        if question_id == "q2":
+            assert "expected_system_output:" in request["state"]
+        else:
+            assert "expected_system_output:" not in request["state"]
     for row in rows:
         states = [r["state"] for r in seen_requests if row["prompt_text"] in r["state"]]
         assert states, row["prompt_text"]
