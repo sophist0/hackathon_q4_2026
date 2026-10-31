@@ -105,6 +105,22 @@ def test_lookup_joins_on_row_id_only():
     assert lookup_candidates(_row("add 5 and 7", "jev", "end_X", row_id=""), TRUTH) == []
 
 
+def test_compare_reports_precision_and_recall_per_category():
+    truth = _truth(
+        ("1", "p1", "e", "Verifiable Minimal"),
+        ("2", "p2", "e", "Unknowable"),
+        ("3", "p3", "e", "Unknowable"),
+    )
+    rows = [
+        _row("p1", "jev", "end_Verifiable_Minimal", row_id="1"),
+        _row("p2", "jev", "end_Unknowable", row_id="2"),
+        _row("p3", "jev", "end_Verifiable_Minimal", row_id="3"),
+    ]
+    report = format_report(compare(rows, truth))
+    assert "P 0.50 R 1.00" in report  # Verifiable Minimal: 1 of 2 predictions right
+    assert "P 1.00 R 0.50" in report  # Unknowable: only predicted once, right
+
+
 def test_compare_scores_accuracy_per_backend_and_category():
     rows = [
         _row("add 5 and 7", "jev", "end_Verifiable_Minimal"),

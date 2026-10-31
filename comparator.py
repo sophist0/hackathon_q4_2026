@@ -148,6 +148,9 @@ class Comparison:
     unscored: list[str] = field(default_factory=list)  # prompt_texts missing from ground truth
     ambiguous: list[str] = field(default_factory=list)  # prompt_texts with several truth variants
     repeated: list[str] = field(default_factory=list)  # row_ids scored more than once per backend
+    predicted: dict[str, dict[str, int]] = field(  # backend -> canonical predicted label -> runs
+        default_factory=dict
+    )
     confusion: dict[str, dict[str, dict[str, int]]] = field(  # backend -> actual -> predicted -> runs
         default_factory=dict
     )
@@ -279,6 +282,11 @@ def compare(
         for backend, runs in per_backend.items():
             for row in runs:
                 confidences[backend].extend(parse_confidences(row))
+                predicted = canonical_label(
+                    strip_leaf_prefix(str(row.get("predicted_label", "")))
+                )
+                counts = result.predicted.setdefault(backend, {})
+                counts[predicted] = counts.get(predicted, 0) + 1
                 score = result.per_backend.setdefault(backend, BackendScore())
                 score.n += 1
                 correct = _row_correct(row, candidates)
@@ -327,6 +335,21 @@ def _pct(value: float | None) -> str:
     return f"{value * 100:.1f}%" if value is not None else "n/a"
 
 
+def _pr(value: float | None) -> str:
+    return f"{value:.2f}" if value is not None else "n/a"
+
+
+def _precision_recall(
+    comparison: Comparison, backend: str, category: str, correct: int
+) -> tuple[float | None, float | None]:
+    """Precision (share of C predictions that are C) and recall for a cell."""
+    predicted_as = comparison.predicted.get(backend, {}).get(canonical_label(category), 0)
+    actual = comparison.per_category.get(category, {}).get(backend)
+    precision = correct / predicted_as if predicted_as else None
+    recall = correct / actual.n if actual and actual.n else None
+    return precision, recall
+
+
 def format_report(comparison: Comparison) -> str:
     """Render a plain-text per-category accuracy table plus diverge list."""
     lines = ["\nbackend: correct/n (accuracy)\n"]
@@ -334,13 +357,18 @@ def format_report(comparison: Comparison) -> str:
         score = comparison.per_backend[backend]
         lines.append(f"  {backend}: {score.correct}/{score.n} ({_pct(score.accuracy)})")
 
-    lines.append("\nper-category accuracy:\n")
+    lines.append("\nper-category accuracy, precision, recall:\n")
     for category in sorted(comparison.per_category):
-        cells = "  ".join(
-            f"{backend} {score.correct}/{score.n} ({_pct(score.accuracy)})"
-            for backend, score in sorted(comparison.per_category[category].items())
-        )
-        lines.append(f"  {category}: {cells}")
+        cells = []
+        for backend, score in sorted(comparison.per_category[category].items()):
+            precision, recall = _precision_recall(
+                comparison, backend, category, score.correct
+            )
+            cells.append(
+                f"{backend} {score.correct}/{score.n} ({_pct(score.accuracy)})"
+                f" P {_pr(precision)} R {_pr(recall)}"
+            )
+        lines.append(f"  {category}: {'  '.join(cells)}")
     lines.append(
         f"\nagreement: {comparison.agreement_agree}/{comparison.agreement_n} "
         f" ({_pct(comparison.agreement_rate)})\n"

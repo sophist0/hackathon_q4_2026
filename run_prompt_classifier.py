@@ -120,8 +120,8 @@ def spark_transport(request):
 
 BACKENDS = (
 #("jev", jev_transport),
-#("clef-flash", clef_transport),
-("clef", clef_transport),  # full 27B Clef: slower, ~6x the input-token price
+("clef-flash", clef_transport),
+#("clef", clef_transport),  # full 27B Clef: slower, ~6x the input-token price
 #("spark-as-jev", spark_transport),
 )
 

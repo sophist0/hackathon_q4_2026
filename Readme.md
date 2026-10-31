@@ -235,7 +235,7 @@ python comparator.py logs/*_runs.jsonl --json
 python comparator.py logs/clef-flash_*_runs.jsonl --plot logs/confusion.png
 ```
 
-The report shows per-backend accuracy, a per-category accuracy table,
+The report shows per-backend accuracy, a per-category table with accuracy, precision, and recall,
 backend-vs-backend agreement rate, and the diverge list (backends
 disagree) plus the all-missed list (no backend got the label).
 Pass `--plot <path>` to also save per-backend confusion matrices
