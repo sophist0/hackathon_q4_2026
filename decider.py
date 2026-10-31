@@ -46,11 +46,19 @@ class System:
 
 
 @dataclass(frozen=True)
+class QuestionExample:
+    prompt: str
+    response: str
+    answer: Answer
+
+
+@dataclass(frozen=True)
 class Question:
     id: str
     text: str
     on_Y: str
     on_N: str
+    examples: tuple[QuestionExample, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -93,6 +101,17 @@ def canonical_label(label: str) -> str:
     return " ".join(label.replace("_", " ").split()).casefold()
 
 
+def _load_example(question_id: str, entry: Mapping[str, Any]) -> QuestionExample:
+    answer = str(entry.get("answer", "")).strip().upper()
+    if answer not in ("Y", "N"):
+        raise ValueError(f"question {question_id!r} example has invalid answer: {answer!r}")
+    return QuestionExample(
+        prompt=str(entry.get("prompt", "")),
+        response=str(entry.get("response", "")),
+        answer=answer,  # type: ignore[arg-type]
+    )
+
+
 def leaf_label(node_id: str) -> str | None:
     """Return the raw leaf label for ``end_<Label>`` ids, else ``None``."""
     if node_id.startswith(LEAF_PREFIX):
@@ -125,6 +144,10 @@ def load_tree(path: str | Path) -> TreeSpec:
                 text=str(item["text"]),
                 on_Y=str(item["on_Y"]),
                 on_N=str(item["on_N"]),
+                examples=tuple(
+                    _load_example(item["id"], entry)
+                    for entry in (item.get("examples") or [])
+                ),
             )
             for item in questions_raw
         ),
@@ -180,9 +203,12 @@ JEV_MODEL = "jev-latest"
 
 def build_jev_request(state: DeciderState, question: Question, context_text: str) -> dict:
     """Build a native TypeSafe Jev request (System One noul shape)."""
+    state_text = _system_one_state_text(state, context_text)
+    if question.examples:
+        state_text += "\n" + _format_examples(question)
     return {
         "model": JEV_MODEL,
-        "state": _system_one_state_text(state, context_text),
+        "state": state_text,
         "questions": {
             question.id: {"type": "noul", "instructions": question.text},
         },
@@ -205,11 +231,25 @@ def _system_one_state_text(state: DeciderState, context_text: str) -> str:
         f"Spec:\n{context_text}" if context_text else "Spec: (assumed known)",
         f"User prompt: {state.prompt_text}",
     ]
+    # Expected stays out of the model state by design (H4 ablation): it is
+    # the answer key, and q2 must judge evaluability without seeing it. The
+    # runner still logs it per row so the comparator can score against it.
     if state.response:
         parts.append(f"LLM_response: {state.response}")
-    if state.expected:
-        parts.append(f"expected_system_output: {state.expected}")
     return "\n".join(parts)
+
+
+def _format_examples(question: Question) -> str:
+    """Render worked examples for a question (empty string when none)."""
+    blocks = []
+    for example in question.examples:
+        blocks.append(
+            "Example:\n"
+            f"User prompt: {example.prompt}\n"
+            f"LLM_response: {example.response}\n"
+            f"Answer: {example.answer}"
+        )
+    return "\n".join(blocks)
 
 
 def build_clef_request(
@@ -221,9 +261,12 @@ def build_clef_request(
     """Build a native Workers AI Clef request (System One noul shape)."""
     if model not in CLEF_MODEL_IDS:
         raise ValueError(f"unknown Clef model: {model!r}")
+    state_text = _system_one_state_text(state, context_text)
+    if question.examples:
+        state_text += "\n" + _format_examples(question)
     return {
         "model": model,
-        "state": _system_one_state_text(state, context_text),
+        "state": state_text,
         "questions": {
             question.id: {"type": "noul", "instructions": question.text},
         },
@@ -239,6 +282,7 @@ def build_spark_request(state: DeciderState, question: Question, context_text: s
         "response": state.response,
         "expected": state.expected,
         "question": question.text,
+        "examples": _format_examples(question),
         "response_format": {"answer": "Y|N", "confidence": "[0,1]"},
     }
 

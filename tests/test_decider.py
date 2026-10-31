@@ -204,7 +204,27 @@ def test_system_one_state_uses_llm_field_labels():
     )
     text = build_clef_request(state, _question(tree, "q1"), "spec text")["state"]
     assert "LLM_response:" in text
-    assert "expected_system_output:" in text
+    # The answer key stays out of the model state (H4 ablation); scoring
+    # still rejoins it from the logs at compare time.
+    assert "expected_system_output:" not in text
+
+
+def test_question_examples_reach_state_text():
+    from decider import QuestionExample, build_clef_request
+
+    tree = load_tree(TREE_PATH)
+    question = tree.question_by_id("q1")
+    assert question.examples == (
+        QuestionExample(
+            prompt="How do I know the last system user?",
+            response="GET http://localhost/last_user",
+            answer="N",
+        ),
+    )
+    state = DeciderState(system=tree.system, prompt_text="How do I divide 100 by 4?")
+    text = build_clef_request(state, question, "spec text")["state"]
+    assert "How do I know the last system user?" in text
+    assert "Answer: N" in text
 
 
 def test_normalize_clef_noul_maps_to_confidence():
@@ -283,7 +303,7 @@ def test_state_response_and_expected_reach_jev_request():
     assert request["model"] == "jev-latest"
     assert "How do I add 5 and 7?" in request["state"]
     assert "GET /add/5/7" in request["state"]
-    assert "12" in request["state"]
+    assert "expected_system_output:" not in request["state"]
     assert "spec" in request["state"]
     assert request["questions"]["q1"] == {
         "type": "noul",
@@ -306,7 +326,7 @@ def test_state_response_and_expected_reach_spark_request():
     assert request["expected"] == "12"
 
 
-def test_walk_threads_response_and_expected_into_state():
+def test_walk_threads_response_into_state_not_expected():
     tree = load_tree(TREE_PATH)
     seen = []
 
@@ -324,8 +344,8 @@ def test_walk_threads_response_and_expected_into_state():
         expected="12",
     )
     assert seen
-    assert all("GET /add/5/7" in request["state"] for request in seen)
-    assert all("12" in request["state"] for request in seen)
+    assert all("LLM_response: GET /add/5/7" in request["state"] for request in seen)
+    assert all("expected_system_output:" not in request["state"] for request in seen)
 
 
 def test_walk_three_step_chain_through_code_tree():

@@ -101,7 +101,7 @@ def spark_transport(request):
         f"Spec:\n{request['context']}\n"
         f"User prompt: {request['user_prompt']}\n"
         f"LLM_response: {request.get('response', '')}\n"
-        f"expected_system_output: {request.get('expected', '')}\n"
+        f"{request.get('examples', '')}\n"
         f"Question (answer Y or N): {request['question']}\n"
         'Reply as JSON only: {"answer": "Y" or "N", "confidence": 0.0-1.0}'
     )
@@ -120,9 +120,9 @@ def spark_transport(request):
 
 BACKENDS = (
 #("jev", jev_transport),
-("clef-flash", clef_transport),
+#("clef-flash", clef_transport),
 #("clef", clef_transport),  # full 27B Clef: slower, ~6x the input-token price
-#("spark-as-jev", spark_transport),
+("spark-as-jev", spark_transport),
 )
 
 

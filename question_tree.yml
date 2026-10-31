@@ -14,18 +14,31 @@ stop_rules:
   - "Spark abstain at any step ends the chain as abstained"
 questions:
   - id: q1
-    text: "Can the input prompt be answered from the system's specified behavior alone now, without outside information? (Y/N)"
+    text: "Can the prompt be answered now using the system's specified behavior alone, without additional information? (Y/N)"
     on_Y: q2
     on_N: end_Unknowable
+    examples:
+      - prompt: "How do I add 1 plus 2?"
+        response: "GET http://localhost/add/1/2"
+        answer: "Y"
   - id: q2
-    text: "Given the prompt, can the expected_system_output be evaluated for correctness? (Y/N)"
+    text: "Given the input prompt and LLM_response, can the system output be validated as correct or incorrect without relying on the system being trustworthy? (Y/N)"
     on_Y: q3
     on_N: q4
   - id: q3
     text: "Given the prompt, is the LLM_response minimal with no unintended side effects? (Y/N)"
     on_Y: end_Verifiable_Minimal
     on_N: end_Verifiable
+    examples:
+      - prompt: "How do I add 1 plus 2?"
+        response: "GET http://localhost/add/1/2, GET http://localhost/add/1/2"
+        answer: "N"
+
   - id: q4
     text: "Given the prompt, is the LLM_response minimal with no unintended side effects? (Y/N)"
     on_Y: end_Unverifiable_Minimal
     on_N: end_Unverifiable
+    examples:
+      - prompt: "How do I add 1 plus 2?"
+        response: "GET http://localhost/add/1/2, GET http://localhost/add/1/2"
+        answer: "N"
