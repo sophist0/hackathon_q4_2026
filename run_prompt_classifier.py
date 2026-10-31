@@ -98,13 +98,13 @@ def spark_transport(request):
 BACKENDS = (
 #("jev", jev_transport),
 ("clef-flash", clef_transport),
-("spark-as-jev", spark_transport),
+#("spark-as-jev", spark_transport),
 )
 
 
 def main():
 
-    RUNALL = True
+    RUNALL = False
 
     tree = load_tree("question_tree.yml")
     rows = load_ground_truth_rows("data/shuffled_prompts_4.csv")

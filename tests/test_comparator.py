@@ -162,6 +162,17 @@ def test_compare_builds_confidence_histograms():
     assert len(result.histograms["jev"]) == 10
 
 
+def test_compare_flags_repeated_row_id_backend_runs():
+    rows = [
+        _row("add 5 and 7", "jev", "end_Verifiable_Minimal"),
+        _row("add 5 and 7", "jev", "end_Verifiable_Minimal"),
+    ]
+    result = compare(rows, TRUTH)
+    assert result.per_backend["jev"].n == 2
+    assert result.repeated == ["row 1: add 5 and 7 x2 (jev)"]
+    assert "row 1: add 5 and 7 x2 (jev)" in format_report(result)
+
+
 def test_compare_files_and_report_on_real_csv(tmp_path):
     truth = load_ground_truth(CSV_PATH)
     row_id, entries = next(iter(truth.by_id.items()))

@@ -147,6 +147,7 @@ class Comparison:
     all_missed: list[str] = field(default_factory=list)  # prompt_texts no backend got right
     unscored: list[str] = field(default_factory=list)  # prompt_texts missing from ground truth
     ambiguous: list[str] = field(default_factory=list)  # prompt_texts with several truth variants
+    repeated: list[str] = field(default_factory=list)  # row_ids scored more than once per backend
     histograms: dict[str, list[int]] = field(default_factory=dict)
 
     @property
@@ -183,7 +184,9 @@ def compare(
     """Score logger rows (any mix of backends) against the ground truth.
 
     Joins on ``row_id`` only. Rows without a ``row_id``, or whose id has
-    no ground-truth entry, are unscored.
+    no ground-truth entry, are unscored. Every row scores, so passing
+    overlapping logs (e.g. a one-off plus a full run) counts the shared
+    ``row_id`` once per run; such repeats are listed in ``repeated``.
     """
     groups: dict[str, dict[str, list[Mapping[str, Any]]]] = defaultdict(
         lambda: defaultdict(list)
@@ -213,6 +216,9 @@ def compare(
             continue
         if len({entry["category"] for entry in candidates}) > 1 and label not in result.ambiguous:
             result.ambiguous.append(label)
+        for backend, runs in per_backend.items():
+            if len(runs) > 1:
+                result.repeated.append(f"{label} x{len(runs)} ({backend})")
         flat: list[Mapping[str, Any]] = [
             row for runs in per_backend.values() for row in runs
         ]
@@ -289,6 +295,9 @@ def format_report(comparison: Comparison) -> str:
     if comparison.ambiguous:
         lines.append(f"\nambiguous truth variants ({len(comparison.ambiguous)}):\n")
         lines.extend(f"  - {prompt}" for prompt in comparison.ambiguous)
+    if comparison.repeated:
+        lines.append(f"\nrepeated rows, counted once per run ({len(comparison.repeated)}):\n")
+        lines.extend(f"  - {prompt}" for prompt in comparison.repeated)
     if comparison.unscored:
         lines.append(f"\nunscored, no ground truth ({len(comparison.unscored)}):\n")
         lines.extend(f"  - {prompt}" for prompt in comparison.unscored)
@@ -319,6 +328,7 @@ def main(argv: list[str] | None = None) -> int:
                     "diverged": comparison.diverged,
                     "all_missed": comparison.all_missed,
                     "ambiguous": comparison.ambiguous,
+                    "repeated": comparison.repeated,
                     "unscored": comparison.unscored,
                     "histograms": comparison.histograms,
                 },
