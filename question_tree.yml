@@ -14,7 +14,7 @@ stop_rules:
   - "Spark abstain at any step ends the chain as abstained"
 questions:
   - id: q1
-    text: "Assuming the system is available, can the input prompt be answered from the system's specified behavior alone, without outside information? (Y/N)"
+    text: "Can the input prompt be answered from the system's specified behavior alone, without outside information? (Y/N)"
     on_Y: q2
     on_N: end_Unknowable
   - id: q2
