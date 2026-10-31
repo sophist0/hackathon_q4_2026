@@ -28,7 +28,8 @@ def _row(prompt="How do I add 5 and 7?", row_id="7"):
 def _stub(queue, calls=None):
     def transport(request):
         if calls is not None:
-            calls.append(request["question"]["id"])
+            (question_id,) = request["questions"]
+            calls.append(question_id)
         answer, confidence = queue.pop(0)
         return {"answer": answer, "p": confidence}
 
@@ -144,14 +145,14 @@ def test_run_all_keeps_expected_attached_without_labels():
     ]
     # Keyed lists are extended per row (not replaced) so twin prompts
     # sharing their text still get enough answers in run order.
-    queues: dict[str, list] = {}
-    for row, answers in zip(rows, planned):
-        queues.setdefault(row["prompt_text"], []).extend(answers)
+    # Calls run in order (row by row, question by question), so one flat
+    # queue covers every planned answer: row 1 N; row 2 Y,Y,N; row 3 Y,N,Y.
+    queue = [pair for answers in planned for pair in answers]
     seen_requests = []
 
     def transport(request):
         seen_requests.append(request)
-        answer, confidence = queues[request["prompt"]].pop(0)
+        answer, confidence = queue.pop(0)
         return {"answer": answer, "p": confidence}
 
     results = run_all(rows, _tree(), "jev", transport, base_dir=ROOT)
@@ -165,11 +166,14 @@ def test_run_all_keeps_expected_attached_without_labels():
         assert result["expected"] == row["expected"]
         assert result["row_id"] == row["row_id"]
         assert "category" not in result
-    # Response and expected now ride along to the model by design;
+    # Response and expected ride along inside the state text by design;
     # the label stays out so the run cannot leak the answer key.
     assert seen_requests
-    by_prompt = {row["prompt_text"]: row for row in rows}
     for request in seen_requests:
         assert "category" not in request
-        assert request["response"] == by_prompt[request["prompt"]]["response"]
-        assert request["expected"] == by_prompt[request["prompt"]]["expected"]
+        assert set(request["questions"]) <= {"q1", "q2", "q3", "q4"}
+    for row in rows:
+        states = [r["state"] for r in seen_requests if row["prompt_text"] in r["state"]]
+        assert states, row["prompt_text"]
+        assert all(row["response"] in state for state in states)
+        assert all(row["expected"] in state for state in states)

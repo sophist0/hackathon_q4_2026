@@ -94,12 +94,39 @@ def _question(tree, qid):
     return tree.question_by_id(qid)
 
 
-def test_decide_jev_yes_no_passthrough():
+def test_decide_jev_native_shape():
     tree = load_tree(TREE_PATH)
-    yes = decide(_state(), _question(tree, "q1"), "jev", lambda req: {"answer": "Y", "p": 0.9})
-    no = decide(_state(), _question(tree, "q1"), "jev", lambda req: {"answer": "N", "p": 0.7})
-    assert (yes.answer, yes.p) == ("Y", 0.9)
-    assert (no.answer, no.p) == ("N", 0.7)
+    seen = {}
+
+    def transport(request):
+        seen.update(request)
+        return {"model": "jev-latest", "answers": {"q1": {"type": "noul", "noul": 0.85}}}
+
+    decision = decide(_state(), _question(tree, "q1"), "jev", transport)
+    assert (decision.answer, decision.p) == ("Y", 0.85)
+    assert seen["model"] == "jev-latest"
+    assert seen["questions"]["q1"] == {"type": "noul", "instructions": _question(tree, "q1").text}
+    assert "How do I add 5 and 7?" in seen["state"]
+
+
+def test_decide_jev_maps_noul_to_confidence():
+    tree = load_tree(TREE_PATH)
+    decision = decide(
+        _state(),
+        _question(tree, "q1"),
+        "jev",
+        lambda req: {"answers": {"q1": {"type": "noul", "noul": 0.2}}},
+    )
+    assert decision.answer == "N"
+    assert decision.p == pytest.approx(0.8)
+
+
+def test_normalize_jev_legacy_stub_shape_still_accepted():
+    from decider import Decision, normalize_jev_reply
+
+    assert normalize_jev_reply({"answer": "Y", "p": 0.9}) == Decision(answer="Y", p=0.9)
+    with pytest.raises(BadDeciderReply):
+        normalize_jev_reply({"answer": "maybe", "p": 0.5})
 
 
 def test_decide_clef_flash_native_shape():
@@ -238,9 +265,15 @@ def test_state_response_and_expected_reach_jev_request():
         expected="12",
     )
     request = build_jev_request(state, _question(tree, "q1"), "spec")
-    assert request["response"] == "GET /add/5/7"
-    assert request["expected"] == "12"
-    assert "category" not in request
+    assert request["model"] == "jev-latest"
+    assert "How do I add 5 and 7?" in request["state"]
+    assert "GET /add/5/7" in request["state"]
+    assert "12" in request["state"]
+    assert "spec" in request["state"]
+    assert request["questions"]["q1"] == {
+        "type": "noul",
+        "instructions": _question(tree, "q1").text,
+    }
 
 
 def test_state_response_and_expected_reach_spark_request():
@@ -276,8 +309,8 @@ def test_walk_threads_response_and_expected_into_state():
         expected="12",
     )
     assert seen
-    assert all(request["response"] == "GET /add/5/7" for request in seen)
-    assert all(request["expected"] == "12" for request in seen)
+    assert all("GET /add/5/7" in request["state"] for request in seen)
+    assert all("12" in request["state"] for request in seen)
 
 
 def test_walk_three_step_chain_through_code_tree():

@@ -175,15 +175,17 @@ def _check_p(value: Any, backend: str) -> float:
     return number
 
 
+JEV_MODEL = "jev-latest"
+
+
 def build_jev_request(state: DeciderState, question: Question, context_text: str) -> dict:
+    """Build a native TypeSafe Jev request (System One noul shape)."""
     return {
-        "backend": "jev",
-        "system": {"id": state.system.id, "name": state.system.name},
-        "context": context_text,
-        "prompt": state.prompt_text,
-        "response": state.response,
-        "expected": state.expected,
-        "question": {"id": question.id, "text": question.text},
+        "model": JEV_MODEL,
+        "state": _system_one_state_text(state, context_text),
+        "questions": {
+            question.id: {"type": "noul", "instructions": question.text},
+        },
     }
 
 
@@ -197,7 +199,7 @@ CLEF_MODEL_IDS = {
 }
 
 
-def _clef_state_text(state: DeciderState, context_text: str) -> str:
+def _system_one_state_text(state: DeciderState, context_text: str) -> str:
     parts = [
         f"System: {state.system.name}",
         f"Spec:\n{context_text}" if context_text else "Spec: (assumed known)",
@@ -221,7 +223,7 @@ def build_clef_request(
         raise ValueError(f"unknown Clef model: {model!r}")
     return {
         "model": model,
-        "state": _clef_state_text(state, context_text),
+        "state": _system_one_state_text(state, context_text),
         "questions": {
             question.id: {"type": "noul", "instructions": question.text},
         },
@@ -241,7 +243,47 @@ def build_spark_request(state: DeciderState, question: Question, context_text: s
     }
 
 
-def normalize_jev_reply(raw: Mapping[str, Any]) -> Decision:
+def _normalize_system_one_reply(
+    raw: Mapping[str, Any],
+    question_id: str | None,
+    backend: str,
+) -> Decision | None:
+    """Normalize a native System One reply, or return ``None`` when not native-shaped."""
+    if not isinstance(raw, Mapping):
+        raise BadDeciderReply(f"{backend} reply must be a mapping: {raw!r}")
+    payload: Mapping[str, Any] = raw
+    result = payload.get("result")
+    if isinstance(result, Mapping) and "answers" in result:
+        payload = result
+    answers = payload.get("answers")
+    if not isinstance(answers, Mapping):
+        return None
+    if question_id is not None and question_id in answers:
+        entry = answers[question_id]
+    elif len(answers) == 1:
+        entry = next(iter(answers.values()))
+    else:
+        raise BadDeciderReply(
+            f"{backend} reply missing answer for {question_id!r}: {answers!r}"
+        )
+    if not isinstance(entry, Mapping):
+        raise BadDeciderReply(f"{backend} reply has invalid entry: {entry!r}")
+    if entry.get("type", "noul") != "noul":
+        raise BadDeciderReply(f"{backend} reply has invalid type: {entry!r}")
+    noul = _check_p(entry.get("noul"), backend)
+    if noul >= 0.5:
+        return Decision(answer="Y", p=noul)
+    return Decision(answer="N", p=1.0 - noul)
+
+
+def normalize_jev_reply(
+    raw: Mapping[str, Any], question_id: str | None = None
+) -> Decision:
+    """Normalize a Jev reply to ``{answer, p}`` (native or stub shape)."""
+    decision = _normalize_system_one_reply(raw, question_id, "jev")
+    if decision is not None:
+        return decision
+    # Stub/proxy shape used by local tests and simple proxies.
     answer = raw.get("answer")
     if answer not in ("Y", "N"):
         raise BadDeciderReply(f"jev reply has invalid answer: {answer!r}")
@@ -263,31 +305,11 @@ def normalize_clef_reply(
     confidence in the chosen answer. The legacy Jev-compatible proxy
     shape ``{"answer": "Y"/"N", "p": ...}`` is still accepted.
     """
-    if not isinstance(raw, Mapping):
-        raise BadDeciderReply(f"{backend} reply must be a mapping: {raw!r}")
-    payload: Mapping[str, Any] = raw
-    result = payload.get("result")
-    if isinstance(result, Mapping) and "answers" in result:
-        payload = result
-    answers = payload.get("answers")
-    if isinstance(answers, Mapping):
-        if question_id is not None and question_id in answers:
-            entry = answers[question_id]
-        elif len(answers) == 1:
-            entry = next(iter(answers.values()))
-        else:
-            raise BadDeciderReply(
-                f"{backend} reply missing answer for {question_id!r}: {answers!r}"
-            )
-        if not isinstance(entry, Mapping):
-            raise BadDeciderReply(f"{backend} reply has invalid entry: {entry!r}")
-        if entry.get("type", "noul") != "noul":
-            raise BadDeciderReply(f"{backend} reply has invalid type: {entry!r}")
-        noul = _check_p(entry.get("noul"), backend)
-        if noul >= 0.5:
-            return Decision(answer="Y", p=noul)
-        return Decision(answer="N", p=1.0 - noul)
+    decision = _normalize_system_one_reply(raw, question_id, backend)
+    if decision is not None:
+        return decision
     # Legacy Jev-compatible proxy shape.
+    payload: Mapping[str, Any] = raw
     answer = payload.get("answer")
     if answer not in ("Y", "N"):
         raise BadDeciderReply(f"{backend} reply has invalid answer: {answer!r}")
@@ -322,7 +344,10 @@ def decide(
     """
     context_text = resolve_context(state.system, base_dir=base_dir)
     if backend == "jev":
-        return normalize_jev_reply(transport(build_jev_request(state, question, context_text)))
+        return normalize_jev_reply(
+            transport(build_jev_request(state, question, context_text)),
+            question_id=question.id,
+        )
     if backend in CLEF_MODEL_IDS:
         return normalize_clef_reply(
             transport(build_clef_request(state, question, context_text, model=backend)),

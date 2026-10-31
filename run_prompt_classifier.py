@@ -1,7 +1,9 @@
 """One-off single-row classification across all three backends.
 
 No keys or endpoints live in this file. Provide them via the environment:
-  JEV_API_URL, JEV_API_KEY                  - Jev typed yes/no endpoint
+  JEV_API_KEY                               - Jev key (TypeSafe console)
+  JEV_API_URL                               - Jev endpoint override (defaults
+                                              to https://api.typesafe.ai/v1/systemone)
   CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN - Clef-flash on Workers AI
   META_API_KEY                              - Muse Spark key (Meta Model API)
 
@@ -38,10 +40,24 @@ def _post_json(url, payload, api_key):
         return json.loads(response.read().decode("utf-8"))
 
 
+JEV_API_URL_DEFAULT = "https://api.typesafe.ai/v1/systemone"
+
+
 def jev_transport(request):
-    """Jev: typed yes/no request, calibrated reply {"answer", "p"}."""
-    reply = _post_json(os.environ["JEV_API_URL"], request, os.environ["JEV_API_KEY"])
-    return {"answer": reply["answer"], "p": float(reply["p"])}
+    """Jev on TypeSafe: native System One noul request.
+
+    ``request`` is the decider-built body (``build_jev_request``):
+    ``{"model": "jev-latest", "state": ..., "questions": ...}``.
+    ``JEV_API_URL`` overrides the official endpoint (e.g. a self-hosted
+    Kev server or proxy). Returns the raw result dict for
+    ``normalize_jev_reply`` (unwraps the outer ``{"result": ...}``
+    envelope when present).
+    """
+    url = os.environ.get("JEV_API_URL", JEV_API_URL_DEFAULT)
+    reply = _post_json(url, request, os.environ["JEV_API_KEY"])
+    if isinstance(reply, dict) and isinstance(reply.get("result"), dict):
+        return reply["result"]
+    return reply
 
 
 CLEF_MODEL_IDS = {
@@ -103,7 +119,7 @@ def spark_transport(request):
 
 
 BACKENDS = (
-#("jev", jev_transport),
+("jev", jev_transport),
 #("clef-flash", clef_transport),
 ("clef", clef_transport),  # full 27B Clef: slower, ~6x the input-token price
 #("spark-as-jev", spark_transport),

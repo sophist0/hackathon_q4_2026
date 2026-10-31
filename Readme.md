@@ -29,14 +29,13 @@ pip install -r requirements.txt
 `run_prompt_classifier.py` reads keys/URLs from the environment, so
 nothing secret lives in the repo:
 
-- `JEV_API_URL`, `JEV_API_KEY` — Jev endpoint
+- `JEV_API_KEY` — Jev key (TypeSafe console); `JEV_API_URL` only if overriding the official endpoint
 - `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_API_TOKEN` — Clef-flash on Workers AI
 - `META_API_KEY` — Muse Spark key (Meta Model API)
 
 ### Option A: per-shell exports (recommended, nothing on disk)
 
 ```bash
-export JEV_API_URL="https://..."
 export JEV_API_KEY="..."
 export CLOUDFLARE_ACCOUNT_ID="..."
 export CLOUDFLARE_API_TOKEN="..."
@@ -104,6 +103,26 @@ includes 10,000 Workers AI Neurons per day and 100,000 requests per day. Past
 that daily amount, upgrade that account to Workers Paid, which is pay-as-you-go
 ($5 per month minimum, then usage rates). Clef-flash bills per input token
 only; output is not billed.
+
+### Setting up Jev on TypeSafe
+
+Jev is called over plain HTTPS — no SDK to install. One request carries the
+state plus one `noul` question per tree step, exactly like the Clef adapter.
+
+1. Sign in to the TypeSafe console and create an API key.
+2. Export it in the same shell before running (the endpoint defaults to the
+   official `https://api.typesafe.ai/v1/systemone`, so no URL is needed):
+
+```bash
+export JEV_API_KEY="..."
+python -c "import os; print('Jev env set:', bool(os.environ.get('JEV_API_KEY')))"
+```
+
+The classifier posts `{"model": "jev-latest", "state": ..., "questions": ...}`
+with a Bearer key and reads the `noul` probability back as Y (at 0.5 or above)
+or N. Set `JEV_API_URL` only to point at a different endpoint, such as a
+self-hosted Kev server or proxy. Billing note: Jev bills per input token only
+($0.042 per million); output is not billed.
 
 ### How not to leak a key
 
@@ -182,7 +201,7 @@ Pass the `backend` argument plus a matching transport and, for Spark, a
 threshold:
 
 ```python
-# Jev (reference decider): reply {"answer": "Y"/"N", "p": 0.0-1.0}
+# Jev on TypeSafe: native System One noul shape, model jev-latest
 run_all(rows, tree, "jev", jev_transport, base_dir=".")
 
 # Clef-flash on Workers AI: native System One noul shape
