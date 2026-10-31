@@ -16,6 +16,7 @@ from typing import Any
 
 from decider import (
     BackendName,
+    Cutoff,
     Transport,
     TreeSpec,
     WalkResult,
@@ -68,6 +69,7 @@ def run_prompt(
     backend: BackendName,
     transport: Transport,
     threshold: float = 0.5,
+    cutoff: Cutoff = 0.5,
     base_dir: str | Path | None = None,
 ) -> dict[str, Any]:
     """Walk one ground-truth row down the tree (at most ``max_depth`` calls)."""
@@ -77,6 +79,7 @@ def run_prompt(
         backend,
         transport,
         threshold=threshold,
+        cutoff=cutoff,
         base_dir=base_dir,
         response=prompt_row.get("response", ""),
         expected=prompt_row.get("expected", ""),
@@ -94,7 +97,7 @@ def run_prompt(
     }
 
 
-def run_all(rows, tree, backend, transport, threshold=0.5, base_dir=None):
+def run_all(rows, tree, backend, transport, threshold=0.5, cutoff=0.5, base_dir=None):
     """Walk every row down the tree, keeping ground truth attached for the logger."""
     pending = list(rows)
     total = len(pending)
@@ -103,7 +106,15 @@ def run_all(rows, tree, backend, transport, threshold=0.5, base_dir=None):
     for number, row in enumerate(pending, start=1):
         print(f"[{number}/{total}] {row['prompt_text'][:60]}")
         results.append(
-            run_prompt(row, tree, backend, transport, threshold=threshold, base_dir=base_dir)
+            run_prompt(
+                row,
+                tree,
+                backend,
+                transport,
+                threshold=threshold,
+                cutoff=cutoff,
+                base_dir=base_dir,
+            )
         )
     print(f"done: processed {len(results)}/{total} prompts")
     return results

@@ -210,21 +210,47 @@ def test_system_one_state_uses_llm_field_labels():
 
 
 def test_question_examples_reach_state_text():
-    from decider import QuestionExample, build_clef_request
+    from decider import Question, QuestionExample, build_clef_request
 
     tree = load_tree(TREE_PATH)
-    question = tree.question_by_id("q1")
-    assert question.examples == (
-        QuestionExample(
-            prompt="How do I know the last system user?",
-            response="GET http://localhost/last_user",
-            answer="N",
+    question = Question(
+        id="q1",
+        text="Can it be answered? (Y/N)",
+        on_Y="q2",
+        on_N="end_Unknowable",
+        examples=(
+            QuestionExample(
+                prompt="How do I know the last system user?",
+                response="GET http://localhost/last_user",
+                answer="N",
+            ),
         ),
     )
     state = DeciderState(system=tree.system, prompt_text="How do I divide 100 by 4?")
     text = build_clef_request(state, question, "spec text")["state"]
     assert "How do I know the last system user?" in text
     assert "Answer: N" in text
+    assert "How do I divide 100 by 4?" in text
+
+
+def test_noul_cutoff_moves_yes_boundary():
+    from decider import normalize_clef_reply
+
+    raw = {"answers": {"q1": {"type": "noul", "noul": 0.3}}}
+    assert normalize_clef_reply(raw, question_id="q1", cutoff=0.5).answer == "N"
+    assert normalize_clef_reply(raw, question_id="q1", cutoff=0.2).answer == "Y"
+    assert normalize_clef_reply(raw, question_id="q1").answer == "N"
+
+
+def test_decide_accepts_per_question_cutoffs():
+    tree = load_tree(TREE_PATH)
+
+    def transport(request):
+        return {"answers": {"q1": {"type": "noul", "noul": 0.3}}}
+
+    low = decide(_state(), _question(tree, "q1"), "clef-flash", transport, cutoff={"q1": 0.2})
+    high = decide(_state(), _question(tree, "q1"), "clef-flash", transport, cutoff={"q1": 0.5})
+    assert (low.answer, high.answer) == ("Y", "N")
 
 
 def test_normalize_clef_noul_maps_to_confidence():

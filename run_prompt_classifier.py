@@ -120,10 +120,17 @@ def spark_transport(request):
 
 BACKENDS = (
 #("jev", jev_transport),
-#("clef-flash", clef_transport),
+("clef-flash", clef_transport),
 #("clef", clef_transport),  # full 27B Clef: slower, ~6x the input-token price
-("spark-as-jev", spark_transport),
+#("spark-as-jev", spark_transport),
 )
+
+# Per-backend ``noul`` Y/N cutoffs (flat value or per-question map).
+# Flash q1 answers N far too eagerly at the default 0.5; 0.06 sacrifices
+# one true Unknowable while releasing five wrongly trapped rows.
+CUTOFFS = {
+    "clef-flash": {"q1": 0.06},
+}
 
 
 def main():
@@ -138,13 +145,19 @@ def main():
     if RUNALL:
         # muse spark run costs ~$0.70, ~5min to run
         for index, (backend, transport) in enumerate(BACKENDS):
-            results = run_all(rows, tree, backend, transport, base_dir=".")
+            results = run_all(
+                rows, tree, backend, transport,
+                cutoff=CUTOFFS.get(backend, 0.5), base_dir=".",
+            )
             write_jsonl(results, backend, "logs/{}_{}_runs.jsonl".format(backend,ctime))
     else:
         rdx = 0     # TEST only the first prompt
         for index, (backend, transport) in enumerate(BACKENDS):
             print("{}: {}".format(backend, index))
-            result = run_prompt(rows[rdx], tree, backend, transport, threshold=0.5, base_dir=".")
+            result = run_prompt(
+                rows[rdx], tree, backend, transport, threshold=0.5,
+                cutoff=CUTOFFS.get(backend, 0.5), base_dir=".",
+            )
             write_jsonl([result], backend, "logs/{}_{}_one_off.jsonl".format(backend,ctime), append=index > 0)
             print(backend, "->", result["predicted_label"], result["path"])
 

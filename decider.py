@@ -287,10 +287,20 @@ def build_spark_request(state: DeciderState, question: Question, context_text: s
     }
 
 
+Cutoff = float | Mapping[str, float]
+
+
+def _resolve_cutoff(cutoff: Cutoff, question_id: str) -> float:
+    """Resolve a cutoff for one question (per-question map or flat value)."""
+    value = cutoff.get(question_id, 0.5) if isinstance(cutoff, Mapping) else cutoff
+    return _check_p(value, "cutoff")
+
+
 def _normalize_system_one_reply(
     raw: Mapping[str, Any],
     question_id: str | None,
     backend: str,
+    cutoff: float = 0.5,
 ) -> Decision | None:
     """Normalize a native System One reply, or return ``None`` when not native-shaped."""
     if not isinstance(raw, Mapping):
@@ -315,16 +325,16 @@ def _normalize_system_one_reply(
     if entry.get("type", "noul") != "noul":
         raise BadDeciderReply(f"{backend} reply has invalid type: {entry!r}")
     noul = _check_p(entry.get("noul"), backend)
-    if noul >= 0.5:
+    if noul >= cutoff:
         return Decision(answer="Y", p=noul)
     return Decision(answer="N", p=1.0 - noul)
 
 
 def normalize_jev_reply(
-    raw: Mapping[str, Any], question_id: str | None = None
+    raw: Mapping[str, Any], question_id: str | None = None, cutoff: float = 0.5
 ) -> Decision:
     """Normalize a Jev reply to ``{answer, p}`` (native or stub shape)."""
-    decision = _normalize_system_one_reply(raw, question_id, "jev")
+    decision = _normalize_system_one_reply(raw, question_id, "jev", cutoff)
     if decision is not None:
         return decision
     # Stub/proxy shape used by local tests and simple proxies.
@@ -338,6 +348,7 @@ def normalize_clef_reply(
     raw: Mapping[str, Any],
     question_id: str | None = None,
     backend: str = CLEF_FLASH_MODEL,
+    cutoff: float = 0.5,
 ) -> Decision:
     """Normalize a Clef reply to ``{answer, p}``.
 
@@ -349,7 +360,7 @@ def normalize_clef_reply(
     confidence in the chosen answer. The legacy Jev-compatible proxy
     shape ``{"answer": "Y"/"N", "p": ...}`` is still accepted.
     """
-    decision = _normalize_system_one_reply(raw, question_id, backend)
+    decision = _normalize_system_one_reply(raw, question_id, backend, cutoff)
     if decision is not None:
         return decision
     # Legacy Jev-compatible proxy shape.
@@ -379,24 +390,29 @@ def decide(
     backend: BackendName,
     transport: Transport,
     threshold: float = 0.5,
+    cutoff: Cutoff = 0.5,
     base_dir: str | Path | None = None,
 ) -> Decision:
     """Ask one tree question via the named backend.
 
     ``transport`` sends the backend-specific request and returns its raw
     reply; it is injectable so tests and runners can stub the network.
+    ``cutoff`` is the ``noul`` Y/N boundary (flat value or per-question
+    map); ``threshold`` is the Spark abstain line. Both default to 0.5.
     """
     context_text = resolve_context(state.system, base_dir=base_dir)
     if backend == "jev":
         return normalize_jev_reply(
             transport(build_jev_request(state, question, context_text)),
             question_id=question.id,
+            cutoff=_resolve_cutoff(cutoff, question.id),
         )
     if backend in CLEF_MODEL_IDS:
         return normalize_clef_reply(
             transport(build_clef_request(state, question, context_text, model=backend)),
             question_id=question.id,
             backend=backend,
+            cutoff=_resolve_cutoff(cutoff, question.id),
         )
     if backend == "spark-as-jev":
         return normalize_spark_reply(
@@ -421,6 +437,7 @@ def walk(
     backend: BackendName,
     transport: Transport,
     threshold: float = 0.5,
+    cutoff: Cutoff = 0.5,
     base_dir: str | Path | None = None,
     response: str = "",
     expected: str = "",
@@ -433,7 +450,13 @@ def walk(
     node = tree.first
     for _ in range(tree.max_depth):
         decision = decide(
-            state, node, backend, transport, threshold=threshold, base_dir=base_dir
+            state,
+            node,
+            backend,
+            transport,
+            threshold=threshold,
+            cutoff=cutoff,
+            base_dir=base_dir,
         )
         result.answers.append(decision.answer)
         result.confidences.append(decision.p)

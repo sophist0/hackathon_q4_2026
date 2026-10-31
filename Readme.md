@@ -210,6 +210,9 @@ run_all(rows, tree, "clef-flash", clef_transport, base_dir=".")
 # Full Clef (27B): same transport, model follows the backend name
 run_all(rows, tree, "clef", clef_transport, base_dir=".")
 
+# Tune the noul Y/N boundary per backend or per question (default 0.5)
+run_all(rows, tree, "clef-flash", clef_transport, cutoff={"q1": 0.1}, base_dir=".")
+
 # Muse Spark as Jev: reply {"answer": "Y"/"N", "confidence": 0.0-1.0};
 # confidence below threshold becomes "abstain" (default threshold 0.5)
 run_all(rows, tree, "spark-as-jev", spark_transport, threshold=0.5, base_dir=".")
