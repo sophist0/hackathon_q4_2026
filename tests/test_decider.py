@@ -192,6 +192,22 @@ def test_decide_full_clef_backend():
     assert seen["model"] == "clef"
 
 
+def test_system_one_state_labels_llm_roles():
+    from decider import build_clef_request
+
+    tree = load_tree(TREE_PATH)
+    state = DeciderState(
+        system=tree.system,
+        prompt_text="How do I add 5 and 7?",
+        response="GET /add/5/7",
+        expected="12",
+    )
+    text = build_clef_request(state, _question(tree, "q1"), "spec text")["state"]
+    assert "LLM_response:" in text
+    assert "LLM_expected_system_output:" in text
+    assert "commands" in text
+
+
 def test_normalize_clef_noul_maps_to_confidence():
     from decider import normalize_clef_reply
 

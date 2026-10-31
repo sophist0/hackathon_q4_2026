@@ -202,13 +202,16 @@ CLEF_MODEL_IDS = {
 def _system_one_state_text(state: DeciderState, context_text: str) -> str:
     parts = [
         f"System: {state.system.name}",
+        "Context: A user prompted an LLM. The LLM responded with commands to"
+        " interact with the system (LLM_response) and stated what it expects"
+        " the system's response to be (LLM_expected_system_output).",
         f"Spec:\n{context_text}" if context_text else "Spec: (assumed known)",
         f"User prompt: {state.prompt_text}",
     ]
     if state.response:
-        parts.append(f"Response: {state.response}")
+        parts.append(f"LLM_response: {state.response}")
     if state.expected:
-        parts.append(f"Expected: {state.expected}")
+        parts.append(f"LLM_expected_system_output: {state.expected}")
     return "\n".join(parts)
 
 
