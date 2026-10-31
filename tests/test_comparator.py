@@ -16,6 +16,7 @@ from comparator import (
     load_ground_truth,
     lookup_candidates,
     parse_confidences,
+    plot_confusion,
     prediction_matches,
 )
 from logger import write_jsonl
@@ -171,6 +172,38 @@ def test_compare_flags_repeated_row_id_backend_runs():
     assert result.per_backend["jev"].n == 2
     assert result.repeated == ["row 1: add 5 and 7 x2 (jev)"]
     assert "row 1: add 5 and 7 x2 (jev)" in format_report(result)
+
+
+def test_compare_builds_confusion_matrix():
+    truth = _truth(
+        ("1", "p1", "e", "Verifiable Minimal"),
+        ("2", "p2", "e", "Unknowable"),
+    )
+    rows = [
+        _row("p1", "jev", "end_Verifiable", row_id="1"),
+        _row("p2", "jev", "abstain", row_id="2"),
+    ]
+    result = compare(rows, truth)
+    assert result.confusion["jev"]["Verifiable Minimal"] == {"Verifiable": 1}
+    assert result.confusion["jev"]["Unknowable"] == {"abstain": 1}
+    report = format_report(result)
+    assert "confusion" in report
+    assert "Verifiable Minimal" in report
+
+
+def test_plot_confusion_saves_png(tmp_path):
+    truth = _truth(
+        ("1", "p1", "e", "Verifiable Minimal"),
+        ("2", "p2", "e", "Unknowable"),
+    )
+    rows = [
+        _row("p1", "jev", "end_Verifiable", row_id="1"),
+        _row("p2", "jev", "end_Unknowable", row_id="2"),
+    ]
+    out = plot_confusion(compare(rows, truth), tmp_path / "confusion.png")
+    data = out.read_bytes()
+    assert data[:8] == b"\x89PNG\r\n\x1a\n"
+    assert len(data) > 1000
 
 
 def test_compare_files_and_report_on_real_csv(tmp_path):

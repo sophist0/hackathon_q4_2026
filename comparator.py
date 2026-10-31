@@ -148,6 +148,9 @@ class Comparison:
     unscored: list[str] = field(default_factory=list)  # prompt_texts missing from ground truth
     ambiguous: list[str] = field(default_factory=list)  # prompt_texts with several truth variants
     repeated: list[str] = field(default_factory=list)  # row_ids scored more than once per backend
+    confusion: dict[str, dict[str, dict[str, int]]] = field(  # backend -> actual -> predicted -> runs
+        default_factory=dict
+    )
     histograms: dict[str, list[int]] = field(default_factory=dict)
 
     @property
@@ -166,6 +169,57 @@ def _histogram(values: Iterable[float], bins: int = HISTOGRAM_BINS) -> list[int]
         if index >= 0:
             counts[index] += 1
     return counts
+
+
+def _display_predicted(predicted_label: Any) -> str:
+    """Render a logged prediction as a matrix label (``end_X_Y`` -> ``X Y``)."""
+    text = strip_leaf_prefix(str(predicted_label)).replace("_", " ").strip()
+    return text or str(predicted_label)
+
+
+def _confusion_axes(
+    matrix: dict[str, dict[str, int]],
+) -> tuple[list[str], list[str]]:
+    """Order matrix rows (actuals) and columns (actuals, then extras)."""
+    actuals = sorted(matrix)
+    known = set(actuals)
+    extras = sorted({label for actual in actuals for label in matrix[actual] if label not in known})
+    return actuals, actuals + extras
+
+
+def plot_confusion(comparison: Comparison, path: str | Path) -> Path:
+    """Save per-backend confusion matrices (actual rows, predicted columns)."""
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        from matplotlib import pyplot as plt
+    except ImportError as exc:
+        raise RuntimeError("plotting needs matplotlib: pip install matplotlib") from exc
+    if not comparison.confusion:
+        raise ValueError("no scored rows to plot")
+    backends = sorted(comparison.confusion)
+    fig, axes = plt.subplots(1, len(backends), figsize=(6 * len(backends), 5), squeeze=False)
+    for ax, backend in zip(axes[0], backends):
+        matrix = comparison.confusion[backend]
+        actuals, columns = _confusion_axes(matrix)
+        values = [[matrix[actual].get(column, 0) for column in columns] for actual in actuals]
+        top = max(max(row) for row in values) if values else 0
+        ax.imshow(values, cmap="Blues", vmin=0, vmax=max(top, 1))
+        ax.set_xticks(range(len(columns)), columns, rotation=30, ha="right")
+        ax.set_yticks(range(len(actuals)), actuals)
+        ax.set_title(backend)
+        ax.set_xlabel("predicted")
+        ax.set_ylabel("actual")
+        for i, actual in enumerate(actuals):
+            for j, column in enumerate(columns):
+                count = matrix[actual].get(column, 0)
+                ax.text(j, i, str(count), ha="center", va="center")
+    fig.tight_layout()
+    out = Path(path)
+    fig.savefig(out, dpi=150)
+    plt.close(fig)
+    return out
 
 
 def _row_correct(row: Mapping[str, Any], candidates: list[dict[str, str]]) -> bool:
@@ -237,6 +291,9 @@ def compare(
                     cell.n += 1
                     if prediction_matches(str(row.get("predicted_label", "")), category):
                         cell.correct += 1
+                    predicted = _display_predicted(row.get("predicted_label", ""))
+                    counts = result.confusion.setdefault(backend, {}).setdefault(category, {})
+                    counts[predicted] = counts.get(predicted, 0) + 1
         backends = [backend for backend, runs in per_backend.items() for _ in runs]
         if len(set(backends)) >= 2:
             labels = {
@@ -301,6 +358,8 @@ def format_report(comparison: Comparison) -> str:
     if comparison.unscored:
         lines.append(f"\nunscored, no ground truth ({len(comparison.unscored)}):\n")
         lines.extend(f"  - {prompt}" for prompt in comparison.unscored)
+    if comparison.confusion:
+        lines.append("\nconfusion matrix figure: pass --plot <path> to save it as PNG.\n")
     lines.append("\n")
     return "\n".join(lines)
 
@@ -314,8 +373,14 @@ def main(argv: list[str] | None = None) -> int:
         help="ground-truth CSV (Categorization labels are the baseline)",
     )
     parser.add_argument("--json", action="store_true", help="emit the report as JSON")
+    parser.add_argument(
+        "--plot", default=None, help="save per-backend confusion matrices as a PNG"
+    )
     args = parser.parse_args(argv)
     comparison = compare_files(args.logs, args.ground_truth)
+    if args.plot:
+        out = plot_confusion(comparison, args.plot)
+        print(f"wrote confusion matrix to {out}")
     if args.json:
         print(
             json.dumps(
@@ -329,6 +394,7 @@ def main(argv: list[str] | None = None) -> int:
                     "all_missed": comparison.all_missed,
                     "ambiguous": comparison.ambiguous,
                     "repeated": comparison.repeated,
+                    "confusion": comparison.confusion,
                     "unscored": comparison.unscored,
                     "histograms": comparison.histograms,
                 },

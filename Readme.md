@@ -213,10 +213,13 @@ Rows without a matching `row_id` are reported unscored, never guessed:
 ```bash
 python comparator.py logs/spark-as-jev_2026-10-29*.jsonl
 python comparator.py logs/*_runs.jsonl --json
+python comparator.py logs/clef-flash_*_runs.jsonl --plot logs/confusion.png
 ```
 
 The report shows per-backend accuracy, a per-category accuracy table,
 backend-vs-backend agreement rate, and the diverge list (backends
 disagree) plus the all-missed list (no backend got the label).
+Pass `--plot <path>` to also save per-backend confusion matrices
+(actual rows, predicted columns) as a PNG figure.
 `tests/test_comparator.py` covers the scoring (`python -m pytest
 tests/test_comparator.py -q`).
