@@ -19,7 +19,7 @@ questions:
     on_N: end_Unknowable
 
   - id: q2
-    text: "Do the requests in the LLM_response contain the information to compute the system output? (Y/N)"
+    text: "Does the prompt ask the service to perform an action, rather than asking about the service itself (its logs, timestamps, data, other users, etc.)? (Y/N)"
     on_Y: q3
     on_N: q4
 
