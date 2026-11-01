@@ -14,6 +14,8 @@ returns the raw reply for decide() to normalize. Anything outside that shape
 
 import json
 import os
+import time
+import urllib.error
 import urllib.request
 from datetime import datetime
 
@@ -26,18 +28,44 @@ SPARK_MODEL = "muse-spark-1.3"
 SPARK_API_URL = "https://api.meta.ai/v1/chat/completions"
 
 
-def _post_json(url, payload, api_key):
+RETRYABLE_STATUS = (429, 500, 502, 503)
+MAX_POST_ATTEMPTS = 3
+
+
+def _retry_delay(attempt, headers):
+    """Seconds to wait before re-posting (honors Retry-After, else backs off)."""
+    if headers is not None:
+        try:
+            return max(0.0, float(headers.get("Retry-After")))
+        except (TypeError, ValueError):
+            pass
+    return min(2.0**attempt, 60.0)
+
+
+def _post_json(url, payload, api_key, timeout=120):
+    """POST JSON with retries on rate limiting (429) and transient 5xx.
+
+    Workers AI answers bursts of back-to-back tree calls with 429 instead
+    of queueing them; without retries the whole run dies on the first one.
+    """
     body = json.dumps(payload).encode("utf-8")
-    request = urllib.request.Request(
-        url,
-        data=body,
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        },
-    )
-    with urllib.request.urlopen(request, timeout=120) as response:
-        return json.loads(response.read().decode("utf-8"))
+    for attempt in range(1, MAX_POST_ATTEMPTS + 1):
+        request = urllib.request.Request(
+            url,
+            data=body,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            },
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            if exc.code not in RETRYABLE_STATUS or attempt == MAX_POST_ATTEMPTS:
+                raise
+            time.sleep(_retry_delay(attempt, exc.headers))
+    raise AssertionError("unreachable: retry loop exhausted without returning")
 
 
 JEV_API_URL_DEFAULT = "https://api.typesafe.ai/v1/systemone"
@@ -66,6 +94,14 @@ CLEF_MODEL_IDS = {
 }
 
 
+def _clef_delay_s():
+    """Seconds to wait before each Clef call (pacing for rate limits)."""
+    try:
+        return max(0.0, float(os.environ.get("CLEF_DELAY_S", "0")))
+    except (TypeError, ValueError):
+        return 0.0
+
+
 def clef_transport(request):
     """Clef on Workers AI: native System One noul request.
 
@@ -74,7 +110,11 @@ def clef_transport(request):
     The endpoint follows the request's ``model`` so one transport serves
     both backends. Returns the raw result dict for ``normalize_clef_reply``
     (unwraps the outer ``{"result": ...}`` envelope when present).
+    Set ``CLEF_DELAY_S`` to pace calls when Workers AI answers 429.
     """
+    delay = _clef_delay_s()
+    if delay:
+        time.sleep(delay)
     model = request.get("model", "clef-flash")
     if model not in CLEF_MODEL_IDS:
         raise ValueError(f"unknown Clef model: {model!r}")
@@ -134,12 +174,15 @@ BACKENDS = (
 # Per-backend ``noul`` Y/N cutoffs (flat value or per-question map).
 # Flash q1 answers N far too eagerly at the default 0.5; 0.06 sacrifices
 # one true Unknowable while releasing five wrongly trapped rows.
+# Flash q2 at 0.8 (the checkable-result wording inverts q2's old bias:
+# Unverifiable rows score 0.51-0.80, Verifiable from 0.81, so 0.8 splits
+# the 0.803/0.815 gap; rows 31/48 Minimal at 0.75-0.77 are conceded).
 # Flash q3 at 0.3 and q4 at 0.8 (swept 2026-10-31 on the 50-row log with
-# the spec-grounded q3/q4 wording, 29 -> 35 correct): q3 splits the
-# 0.224/0.496 gap; q4 at 0.8 threads between rows 24 (0.805) and 23
-# (0.863), so it has less margin than q3 and is worth re-checking per run.
+# the spec-grounded q3/q4 wording): q3 splits the 0.224/0.496 gap; q4 at
+# 0.8 threads between rows 24 (0.805) and 23 (0.863), so it has less
+# margin than q3 and is worth re-checking per run.
 CUTOFFS = {
-    "clef-flash": {"q1": 0.06, "q3": 0.3, "q4": 0.8},
+    "clef-flash": {"q1": 0.06, "q2": 0.8, "q3": 0.3, "q4": 0.8},
 }
 
 

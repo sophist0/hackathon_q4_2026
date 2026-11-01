@@ -19,7 +19,9 @@ questions:
     on_N: end_Unknowable
 
   - id: q2
-    text: "Does the prompt ask the service to perform an action, rather than asking about the service itself (its logs, timestamps, data, other users, etc.)? (Y/N)"
+    # text: "Does the prompt ask the service to perform an action, rather than asking about the service itself (its logs, timestamps, data, other users, etc.)? (Y/N)"
+    # text: "Does the prompt ask the service to perform an action with a checkable result, rather than asking about things only the service itself could tell you (whether its logs are complete or accurate, what other users did, what time it is)? (Y/N)"
+    text: "Does the prompt ask the service to perform an action with a checkable result, and not about things that require perfect knowledge of the service (such as whether the services logs are complete or accurate, what other users did, timestamp accuracy, etc.)? (Y/N)"
     on_Y: q3
     on_N: q4
 

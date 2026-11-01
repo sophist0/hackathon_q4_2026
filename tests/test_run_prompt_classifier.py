@@ -64,6 +64,78 @@ def test_spark_prompt_shows_expected_only_for_q2(monkeypatch):
     assert "expected_system_output: e" in prompts[1]
 
 
+def test_post_json_retries_429_then_succeeds(monkeypatch):
+    import urllib.error
+
+    attempts = []
+    sleeps = []
+    monkeypatch.setattr(rpc.time, "sleep", sleeps.append)
+
+    def fake_urlopen(request, timeout=120):
+        attempts.append(request)
+        if len(attempts) < 3:
+            raise urllib.error.HTTPError(
+                request.full_url, 429, "Too Many Requests", {"Retry-After": "0"}, None
+            )
+        return _FakeResponse({"ok": True})
+
+    monkeypatch.setattr(rpc.urllib.request, "urlopen", fake_urlopen)
+    assert rpc._post_json("https://x.test/", {"a": 1}, "tok") == {"ok": True}
+    assert len(attempts) == 3
+    assert sleeps == [0.0, 0.0]
+
+
+def test_post_json_reraises_non_retryable(monkeypatch):
+    import urllib.error
+
+    def fake_urlopen(request, timeout=120):
+        raise urllib.error.HTTPError(request.full_url, 400, "Bad Request", {}, None)
+
+    monkeypatch.setattr(rpc.urllib.request, "urlopen", fake_urlopen)
+    try:
+        rpc._post_json("https://x.test/", {}, "tok")
+    except urllib.error.HTTPError as exc:
+        assert exc.code == 400
+    else:
+        raise AssertionError("expected HTTPError to propagate")
+
+
+class _FakeResponse:
+    def __init__(self, payload):
+        import json
+
+        self._body = json.dumps(payload).encode("utf-8")
+
+    def read(self):
+        return self._body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+def test_clef_transport_paces_calls_when_delay_set(monkeypatch):
+    sleeps = []
+    monkeypatch.setattr(rpc.time, "sleep", sleeps.append)
+    monkeypatch.setattr(rpc, "_post_json", lambda *a: {})
+    monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct123")
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "tok")
+
+    monkeypatch.delenv("CLEF_DELAY_S", raising=False)
+    rpc.clef_transport(_request("clef-flash"))
+    assert sleeps == []
+
+    monkeypatch.setenv("CLEF_DELAY_S", "2.5")
+    rpc.clef_transport(_request("clef-flash"))
+    assert sleeps == [2.5]
+
+    monkeypatch.setenv("CLEF_DELAY_S", "junk")
+    rpc.clef_transport(_request("clef-flash"))
+    assert sleeps == [2.5]
+
+
 def test_clef_transport_routes_by_request_model(monkeypatch):
     calls = []
 
@@ -86,14 +158,14 @@ def test_clef_transport_routes_by_request_model(monkeypatch):
     ]
 
 
-def test_configured_clef_flash_cutoffs_split_minimality():
-    """The live CUTOFFS split minimality at q3=0.3 and q4=0.8."""
+def test_configured_clef_flash_cutoffs_split_evaluable_and_minimal():
+    """The live CUTOFFS split evaluability at q2=0.8, minimality at q3=0.3/q4=0.8."""
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[1]
     tree = load_tree(root / "question_tree.yml")
     cutoff = rpc.CUTOFFS["clef-flash"]
-    assert cutoff == {"q1": 0.06, "q3": 0.3, "q4": 0.8}
+    assert cutoff == {"q1": 0.06, "q2": 0.8, "q3": 0.3, "q4": 0.8}
 
     def run_with(q2_noul, qmin_noul):
         nouls = iter([0.8, q2_noul, qmin_noul])
@@ -106,6 +178,8 @@ def test_configured_clef_flash_cutoffs_split_minimality():
                "response": "GET /add/5/7", "expected": "12"}
         return run_prompt(row, tree, "clef-flash", transport, cutoff=cutoff, base_dir=root)
 
+    # q2 boundary: 0.79 routes to the unverifiable branch, 0.8 stays evaluable.
+    assert run_with(0.79, 0.9)["predicted_label"] == "end_Unverifiable_Minimal"
     assert run_with(0.8, 0.2)["predicted_label"] == "end_Verifiable"
     assert run_with(0.8, 0.5)["predicted_label"] == "end_Verifiable_Minimal"
     assert run_with(0.2, 0.5)["predicted_label"] == "end_Unverifiable"
