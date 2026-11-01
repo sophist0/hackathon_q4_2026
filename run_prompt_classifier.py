@@ -172,17 +172,15 @@ BACKENDS = (
 )
 
 # Per-backend ``noul`` Y/N cutoffs (flat value or per-question map).
-# Flash q1 answers N far too eagerly at the default 0.5; 0.06 sacrifices
-# one true Unknowable while releasing five wrongly trapped rows.
-# Flash q2 at 0.8 (the checkable-result wording inverts q2's old bias:
-# Unverifiable rows score 0.51-0.80, Verifiable from 0.81, so 0.8 splits
-# the 0.803/0.815 gap; rows 31/48 Minimal at 0.75-0.77 are conceded).
-# Flash q3 at 0.3 and q4 at 0.8 (swept 2026-10-31 on the 50-row log with
-# the spec-grounded q3/q4 wording): q3 splits the 0.224/0.496 gap; q4 at
-# 0.8 threads between rows 24 (0.805) and 23 (0.863), so it has less
-# margin than q3 and is worth re-checking per run.
+# Flash q1 at 0.07 (swept 2026-11-01 on the 38/50 log: fixes row 29
+# Unknowable at 0.0694 with no other row crossing).
+# Flash q2 at 0.82 (experiment 2026-11-01: reroutes rows 12/26 to q4;
+# scores unknown until a fresh run observes their q4 nouls).
+# Flash q3 at 0.3 (no gain on the 38/50 log).
+# Flash q4 at 0.6 (swept 2026-11-01: fixes row 44 Minimal at 0.666
+# inside the 0.52/0.67 gap).
 CUTOFFS = {
-    "clef-flash": {"q1": 0.06, "q2": 0.8, "q3": 0.3, "q4": 0.8},
+    "clef-flash": {"q1": 0.07, "q2": 0.82, "q3": 0.3, "q4": 0.6},
 }
 
 
