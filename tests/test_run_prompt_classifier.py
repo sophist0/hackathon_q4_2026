@@ -86,17 +86,17 @@ def test_clef_transport_routes_by_request_model(monkeypatch):
     ]
 
 
-def test_configured_clef_flash_cutoffs_hold_mid_confidence_q3():
-    """The live CUTOFFS keep a mid-confidence q3 Y (noul 0.8) at Verifiable."""
+def test_configured_clef_flash_cutoffs_split_minimality():
+    """The live CUTOFFS split minimality at q3=0.3 and q4=0.8."""
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[1]
     tree = load_tree(root / "question_tree.yml")
     cutoff = rpc.CUTOFFS["clef-flash"]
-    assert cutoff == {"q1": 0.06, "q3": 0.9}
+    assert cutoff == {"q1": 0.06, "q3": 0.3, "q4": 0.8}
 
-    def run_with(q3_noul):
-        nouls = iter([0.8, 0.8, q3_noul])
+    def run_with(q2_noul, qmin_noul):
+        nouls = iter([0.8, q2_noul, qmin_noul])
 
         def transport(request):
             (question_id,) = request["questions"]
@@ -106,5 +106,9 @@ def test_configured_clef_flash_cutoffs_hold_mid_confidence_q3():
                "response": "GET /add/5/7", "expected": "12"}
         return run_prompt(row, tree, "clef-flash", transport, cutoff=cutoff, base_dir=root)
 
-    assert run_with(0.8)["predicted_label"] == "end_Verifiable"
-    assert run_with(0.95)["predicted_label"] == "end_Verifiable_Minimal"
+    assert run_with(0.8, 0.2)["predicted_label"] == "end_Verifiable"
+    assert run_with(0.8, 0.5)["predicted_label"] == "end_Verifiable_Minimal"
+    assert run_with(0.2, 0.5)["predicted_label"] == "end_Unverifiable"
+    # 0.75 sits just under the q4=0.8 line: pins the threading choice.
+    assert run_with(0.2, 0.75)["predicted_label"] == "end_Unverifiable"
+    assert run_with(0.2, 0.85)["predicted_label"] == "end_Unverifiable_Minimal"

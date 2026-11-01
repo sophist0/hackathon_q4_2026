@@ -24,11 +24,11 @@ questions:
     on_N: q4
 
   - id: q3
-    text: "Does the LLM_response contain only the requests required for the prompt's task, with no extra or redundant calls? (Y/N)"
+    text: "Given the system specification is every request in the LLM_response required for the prompt's task? (Y/N)"
     on_Y: end_Verifiable_Minimal
     on_N: end_Verifiable
 
   - id: q4
-    text: "Does the LLM_response contain only the requests required for the prompt's task, with no extra or redundant calls? (Y/N)"
+    text: "Given the system specification is every request in the LLM_response required for the prompt's task? (Y/N)"
     on_Y: end_Unverifiable_Minimal
     on_N: end_Unverifiable
