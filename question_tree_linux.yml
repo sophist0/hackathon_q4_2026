@@ -1,0 +1,32 @@
+tree_id: user_prompt_v1
+input_class: User Prompt
+system:
+  id: linux_os_v1
+  name: "Linux OS"
+  spec_ref: "data/linux_system.txt"
+  context: inline  # linux spec is bespoke; decider injects spec_ref text
+target_labels: [Unknowable, Verifiable Minimal, Verifiable, Unverifiable Minimal, Unverifiable]
+max_depth: 3
+stop_rules:
+  - "N at q1 ends the chain"
+  - "Spark abstain at any step ends the chain as abstained"
+questions:
+  - id: q1
+    text: "Is the prompt answerable by the system according to its specification? (Y/N)"
+    on_Y: q2
+    on_N: end_Unknowable
+
+  - id: q2
+    text: "Does the prompt ask the system to perform an action with a checkable result, and not about things that require perfect knowledge of the system (such as whether the system logs are complete or accurate, what other users did, timestamp accuracy, etc.)? (Y/N)"
+    on_Y: q3
+    on_N: q4
+
+  - id: q3
+    text: "Given the system specification is every request in the LLM_response required for the prompt's task? (Y/N)"
+    on_Y: end_Verifiable_Minimal
+    on_N: end_Verifiable
+
+  - id: q4
+    text: "Given the system specification is every request in the LLM_response required for the prompt's task? (Y/N)"
+    on_Y: end_Unverifiable_Minimal
+    on_N: end_Unverifiable

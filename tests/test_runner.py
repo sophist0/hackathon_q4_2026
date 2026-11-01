@@ -59,6 +59,36 @@ def test_load_ground_truth_rows_prefers_row_column(tmp_path):
     assert row["row_id"] == "42"
 
 
+def test_load_ground_truth_rows_supports_linux_headers(tmp_path):
+    csv_path = tmp_path / "linux.csv"
+    csv_path.write_text(
+        "Question_id|Title|Response|Categorization\n"
+        "17823|How to list all installed packages|dpkg -l|Unverifiable Minimal\n",
+        encoding="utf-8",
+    )
+    (row,) = load_ground_truth_rows(csv_path)
+    assert row == {
+        "row_id": "17823",
+        "prompt_text": "How to list all installed packages",
+        "response": "dpkg -l",
+        "expected": "",
+    }
+
+
+def test_linux_tree_walk_needs_no_network():
+    tree = load_tree(ROOT / "question_tree_linux.yml")
+    assert tree.system.id == "linux_os_v1"
+    rows = load_ground_truth_rows(ROOT / "data/linux_question_responses_groundtruth.csv")
+    assert len(rows) == 100
+    result = run_prompt(
+        rows[0], tree, "jev", _stub([("Y", 0.9), ("Y", 0.9), ("Y", 0.9)]),
+        base_dir=ROOT,
+    )
+    assert result["row_id"] == "17823"
+    assert result["path"] == ["q1", "q2", "q3"]
+    assert result["predicted_label"] == "end_Verifiable_Minimal"
+
+
 def test_n_at_q1_ends_chain_in_one_call():
     calls = []
     result = run_prompt(

@@ -12,6 +12,7 @@ returns the raw reply for decide() to normalize. Anything outside that shape
 (Y/N answers, 0-1 confidences) raises rather than mislabeling.
 """
 
+import argparse
 import json
 import os
 import time
@@ -172,44 +173,54 @@ BACKENDS = (
 )
 
 # Per-backend ``noul`` Y/N cutoffs (flat value or per-question map).
-# Flash q1 answers N far too eagerly at the default 0.5; 0.06 sacrifices
-# one true Unknowable while releasing five wrongly trapped rows.
-# Flash q2 at 0.8 (the checkable-result wording inverts q2's old bias:
-# Unverifiable rows score 0.51-0.80, Verifiable from 0.81, so 0.8 splits
-# the 0.803/0.815 gap; rows 31/48 Minimal at 0.75-0.77 are conceded).
-# Flash q3 at 0.3 and q4 at 0.8 (swept 2026-10-31 on the 50-row log with
-# the spec-grounded q3/q4 wording): q3 splits the 0.224/0.496 gap; q4 at
-# 0.8 threads between rows 24 (0.805) and 23 (0.863), so it has less
-# margin than q3 and is worth re-checking per run.
+# Flash q1 at 0.07 (swept 2026-11-01 on the 38/50 log: fixes row 29
+# Unknowable at 0.0694 with no other row crossing).
+# Flash q2 at 0.82 (experiment 2026-11-01: reroutes rows 12/26 to q4;
+# scores unknown until a fresh run observes their q4 nouls).
+# Flash q3 at 0.3 (no gain on the 38/50 log).
+# Flash q4 at 0.6 (swept 2026-11-01: fixes row 44 Minimal at 0.666
+# inside the 0.52/0.67 gap).
 CUTOFFS = {
-    "clef-flash": {"q1": 0.06, "q2": 0.8, "q3": 0.3, "q4": 0.8},
+    "clef-flash": {"q1": 0.07, "q2": 0.82, "q3": 0.3, "q4": 0.6},
 }
 
 
-def main():
+def main(argv=None):
 
     RUNALL = True
 
-    tree = load_tree("question_tree.yml")
-    rows = load_ground_truth_rows("data/shuffled_prompts_4.csv")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--tree", default="question_tree.yml",
+                        help="tree spec file (e.g. question_tree_linux.yml)")
+    parser.add_argument("--csv", default="data/shuffled_prompts_4.csv",
+                        help="ground-truth CSV (e.g. data/linux_question_responses_groundtruth.csv)")
+    args = parser.parse_args(argv)
+
+    tree = load_tree(args.tree)
+    rows = load_ground_truth_rows(args.csv)
     now = datetime.now()
     ctime = now.strftime("%Y-%m-%d %H:%M:%S")
+    # Adder cutoffs were swept on the adder logs only; other systems
+    # start at the 0.5 default until their own sweep says otherwise.
+    use_tuned_cutoffs = args.tree == "question_tree.yml"
 
     if RUNALL:
         # muse spark run costs ~$0.70, ~5min to run
         for index, (backend, transport) in enumerate(BACKENDS):
+            cutoff = CUTOFFS.get(backend, 0.5) if use_tuned_cutoffs else 0.5
             results = run_all(
                 rows, tree, backend, transport,
-                cutoff=CUTOFFS.get(backend, 0.5), base_dir=".",
+                cutoff=cutoff, base_dir=".",
             )
             write_jsonl(results, backend, "logs/{}_{}_runs.jsonl".format(backend,ctime))
     else:
         rdx = 0     # TEST only the first prompt
         for index, (backend, transport) in enumerate(BACKENDS):
             print("{}: {}".format(backend, index))
+            cutoff = CUTOFFS.get(backend, 0.5) if use_tuned_cutoffs else 0.5
             result = run_prompt(
                 rows[rdx], tree, backend, transport, threshold=0.5,
-                cutoff=CUTOFFS.get(backend, 0.5), base_dir=".",
+                cutoff=cutoff, base_dir=".",
             )
             write_jsonl([result], backend, "logs/{}_{}_one_off.jsonl".format(backend,ctime), append=index > 0)
             print(backend, "->", result["predicted_label"], result["path"])

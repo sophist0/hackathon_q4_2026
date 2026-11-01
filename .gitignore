@@ -1,6 +1,7 @@
 logs/
 logs_*
-all_logs/
+log_archive/
+log_*
 __pycache__/
 *.pyc
 .env

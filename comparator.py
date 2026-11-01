@@ -70,6 +70,13 @@ GROUND_TRUTH_COLUMNS = {
     "category": "Categorization",
 }
 
+LINUX_GROUND_TRUTH_COLUMNS = {
+    "row_id": "Question_id",
+    "prompt_text": "Title",
+    "expected": "Response",
+    "category": "Categorization",
+}
+
 
 @dataclass
 class GroundTruth:
@@ -92,22 +99,27 @@ def load_ground_truth(csv_path: str | Path) -> GroundTruth:
     truth = GroundTruth()
     with open(csv_path, newline="", encoding="utf-8") as handle:
         reader = csv.DictReader(handle, delimiter="|")
+        columns = (
+            LINUX_GROUND_TRUTH_COLUMNS
+            if reader.fieldnames and "Question_id" in reader.fieldnames
+            else GROUND_TRUTH_COLUMNS
+        )
         position = 0
         for record in reader:
-            prompt_text = (record.get(GROUND_TRUTH_COLUMNS["prompt_text"]) or "").strip()
+            prompt_text = (record.get(columns["prompt_text"]) or "").strip()
             if not prompt_text:
                 continue
             position += 1
-            row_id = (record.get(GROUND_TRUTH_COLUMNS["row_id"]) or "").strip() or str(
+            row_id = (record.get(columns["row_id"]) or "").strip() or str(
                 position
             )
             truth.by_id.setdefault(row_id, []).append(
                 {
                     "row_id": row_id,
                     "prompt_text": prompt_text,
-                    "expected": (record.get(GROUND_TRUTH_COLUMNS["expected"]) or "").strip(),
+                    "expected": (record.get(columns["expected"]) or "").strip(),
                     "category": (
-                        record.get(GROUND_TRUTH_COLUMNS["category"]) or ""
+                        record.get(columns["category"]) or ""
                     ).strip(),
                 }
             )

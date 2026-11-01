@@ -81,6 +81,18 @@ def test_load_ground_truth_prefers_row_column(tmp_path):
     assert truth.by_id["7"][0]["category"] == "Verifiable Minimal"
 
 
+def test_load_ground_truth_supports_linux_headers(tmp_path):
+    csv_path = tmp_path / "linux.csv"
+    csv_path.write_text(
+        "Question_id|Title|Response|Categorization\n"
+        "17823|How to list all installed packages|dpkg -l|Unverifiable Minimal\n",
+        encoding="utf-8",
+    )
+    truth = load_ground_truth(csv_path)
+    assert list(truth.by_id) == ["17823"]
+    assert truth.by_id["17823"][0]["category"] == "Unverifiable Minimal"
+
+
 def test_prediction_matches_canonicalizes_leaf_labels():
     assert prediction_matches("end_Verifiable_Minimal", "Verifiable Minimal")
     assert prediction_matches("end_Unknowable", "unknowable")

@@ -185,6 +185,23 @@ write_jsonl(results, "jev", "logs/runs.jsonl")
 This walks all 50 ground-truth rows (10 per label), keeping each row's
 `expected`/`category` attached to its result for scoring.
 
+## Run the Linux prompts
+
+Yes, pass both args — the defaults run the 8-bit adder set:
+
+```bash
+python run_prompt_classifier.py --tree question_tree_linux.yml --csv data/linux_question_responses_groundtruth.csv
+```
+
+This walks all 100 Linux rows through the Linux OS tree
+(`data/linux_system.txt`, injected inline). Cutoffs start at the 0.5
+default: the tuned adder cutoffs do not transfer to a new system.
+Score the run with:
+
+```bash
+python comparator.py logs/<newfile>.jsonl --ground-truth data/linux_question_responses_groundtruth.csv
+```
+
 ## Where logged results go
 
 You choose the path: `write_jsonl` and `write_csv` write exactly where
