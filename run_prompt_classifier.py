@@ -134,8 +134,11 @@ BACKENDS = (
 # Per-backend ``noul`` Y/N cutoffs (flat value or per-question map).
 # Flash q1 answers N far too eagerly at the default 0.5; 0.06 sacrifices
 # one true Unknowable while releasing five wrongly trapped rows.
+# Flash q3 at 0.9 (swept 2026-10-31 on the 50-row log: 26 -> 29 correct,
+# +5 Verifiable fixed vs -2 Minimal lost) keeps mid-confidence q3 Y
+# replies (noul 0.5-0.87, mostly Verifiable) from claiming Minimal.
 CUTOFFS = {
-    "clef-flash": {"q1": 0.06},
+    "clef-flash": {"q1": 0.06, "q3": 0.9},
 }
 
 

@@ -1,7 +1,8 @@
 """Tests for the runnable classifier transports (no network)."""
 
 import run_prompt_classifier as rpc
-from decider import DeciderState, Question, System, build_spark_request
+from decider import DeciderState, Question, System, build_spark_request, load_tree
+from runner import run_prompt
 
 
 def _request(model):
@@ -83,3 +84,27 @@ def test_clef_transport_routes_by_request_model(monkeypatch):
         "https://api.cloudflare.com/client/v4/accounts/acct123"
         "/ai/run/@cf/cloudflare/clef",
     ]
+
+
+def test_configured_clef_flash_cutoffs_hold_mid_confidence_q3():
+    """The live CUTOFFS keep a mid-confidence q3 Y (noul 0.8) at Verifiable."""
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    tree = load_tree(root / "question_tree.yml")
+    cutoff = rpc.CUTOFFS["clef-flash"]
+    assert cutoff == {"q1": 0.06, "q3": 0.9}
+
+    def run_with(q3_noul):
+        nouls = iter([0.8, 0.8, q3_noul])
+
+        def transport(request):
+            (question_id,) = request["questions"]
+            return {"answers": {question_id: {"type": "noul", "noul": next(nouls)}}}
+
+        row = {"row_id": "7", "prompt_text": "How do I add 5 and 7?",
+               "response": "GET /add/5/7", "expected": "12"}
+        return run_prompt(row, tree, "clef-flash", transport, cutoff=cutoff, base_dir=root)
+
+    assert run_with(0.8)["predicted_label"] == "end_Verifiable"
+    assert run_with(0.95)["predicted_label"] == "end_Verifiable_Minimal"

@@ -235,10 +235,10 @@ def _system_one_state_text(
         f"Spec:\n{context_text}" if context_text else "Spec: (assumed known)",
         f"User prompt: {state.prompt_text}",
     ]
-    # Expected stays out of the model state by design (H4 ablation): it is
-    # the answer key. q2 alone sees it, to test whether the output's
-    # presence restores any discrimination there. The runner still logs it
-    # per row so the comparator can score against it.
+    # Expected stays out of the model state except at q2: it is the
+    # answer key, but the dropout test (2026-10-30) showed q2 needs to see
+    # what it judges. The runner still logs expected per row so the
+    # comparator can score against it.
     if state.response:
         parts.append(f"LLM_response: {state.response}")
     if include_expected and state.expected:
