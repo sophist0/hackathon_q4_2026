@@ -1,0 +1,101 @@
+Question_id|Title|Response|Categorization
+17823|How to list all installed packages|dpkg -l|Unverifiable Minimal
+86849|How to unzip a zip file from the Terminal?|unzip archive.zip|Verifiable Minimal
+601|&quot;The following packages have been kept back:&quot; Why and how do I solve it?|sudo apt-get update && sudo apt-get dist-upgrade|Verifiable Minimal
+307|How can PPAs be removed?|sudo add-apt-repository --remove ppa:ppa-name|Verifiable Minimal
+40779|How do I install a .deb file via the command line?|sudo dpkg -i package.deb|Verifiable Minimal
+420981|How do I save terminal output to a file?|command > output.txt 2>&1|Verifiable Minimal
+86822|How can I copy the contents of a folder to another folder in a different directory using terminal?|cp -r sourcedir/. destdir/|Verifiable Minimal
+25347|What command do I need to unzip/extract a .tar.gz file?|tar -xzf archive.tar.gz|Verifiable Minimal
+1224|How do I determine the total size of a directory (folder) from the command line?|du -sh directory|Unverifiable Minimal
+56683|Where is the cron / crontab log?|grep CRON /var/log/syslog|Verifiable Minimal
+477551|How can I use Docker without sudo?|sudo usermod -aG docker $USER|Verifiable Minimal
+15433|Unable to lock the administration directory (/var/lib/dpkg/) is another process using it?|sudo dpkg --configure -a|Unverifiable Minimal
+426750|How can I update my nodeJS to the latest version?|sudo npm install -g n && sudo n latest|Verifiable Minimal
+44122|How to upgrade a single package using apt-get?|sudo apt-get install --only-upgrade package-name|Verifiable Minimal
+410244|Is there a command to list all users? Also to add, delete, modify users, in the terminal?|cut -d: -f1 /etc/passwd|Unverifiable Minimal
+8653|How to keep processes running after ending ssh session?|nohup command &|Verifiable Minimal
+92328|How do I uncompress a tarball that uses .xz?|tar -xJf archive.tar.xz|Verifiable Minimal
+7477|How can I add a user as a new sudoer using the command line?|sudo usermod -aG sudo username|Verifiable Minimal
+60218|How to add a directory to the PATH?|export PATH=$PATH:/new/directory|Verifiable Minimal
+45349|How to extract files to another directory using &#39;tar&#39; command?|tar -xf archive.tar -C /target/directory|Verifiable Minimal
+187071|How do I shut down or reboot from a terminal?|sudo shutdown -h now|Verifiable Minimal
+59458|Error message &quot;sudo: unable to resolve host (none)&quot;|sudo sh -c 'echo 127.0.0.1 $(hostname) >> /etc/hosts'|Verifiable Minimal
+505506|How to get bash or ssh into a running container in background mode?|docker exec -it container_name bash|Verifiable Minimal
+19320|How to enable or disable services?|sudo systemctl enable servicename|Verifiable Minimal
+20414|Find and replace text within a file using commands|sed -i 's/old-text/new-text/g' file|Verifiable Minimal
+377438|How can I recursively delete all files of a specific extension in the current directory?|find . -name '*.ext' -delete|Verifiable Minimal
+79565|How to add existing user to an existing group?|sudo usermod -aG groupname username|Verifiable Minimal
+160897|How do I search for available packages from the command-line?|apt-cache search keyword|Unverifiable Minimal
+196768|How to install updates via command line?|sudo apt update && sudo apt upgrade|Verifiable Minimal
+385528|How to increment a variable in bash?|((count++))|Verifiable Minimal
+215505|How do you monitor the progress of dd?|dd if=input of=output status=progress|Verifiable Minimal
+95910|Command for determining my public IP?|curl ifconfig.me|Verifiable Minimal
+445384|What is the difference between apt and apt-get?|man apt|Unverifiable Minimal
+113544|How can I reduce the file size of a scanned PDF file?|gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/ebook -dNOPAUSE -dBATCH -sOutputFile=output.pdf input.pdf|Verifiable
+73160|How do I find the amount of free space on my hard drive?|df -h|Unverifiable Minimal
+56326|How do I rename a directory via the command line?|mv old-directory new-directory|Verifiable Minimal
+24006|How do I reset a lost administrative password?|sudo passwd username|Verifiable Minimal
+481|How do I find the package that provides a file?|dpkg -S filename|Unverifiable Minimal
+221962|How can I extract a page range / a part of a PDF?|pdftk input.pdf cat 1-5 output output.pdf|Verifiable Minimal
+217893|How to delete a non-empty directory in Terminal?|rm -rf directory|Verifiable Minimal
+6723|Change folder permissions and ownership|sudo chown -R user:group folder|Verifiable Minimal
+104755|How to check Internet Speed via Terminal?|speedtest-cli|Verifiable Minimal
+814|How to run scripts on start up?|crontab -e|Verifiable Minimal
+15832|How do I get the CPU temperature?|sensors|Unverifiable Minimal
+187888|What is the correct way to completely remove an application?|sudo apt purge application-name|Unknowable
+4408|What should I do when Ubuntu freezes?|sudo systemctl reboot|Unknowable
+2793|How do I remove old kernel versions to clean up the boot menu?|sudo apt autoremove|Verifiable Minimal
+320996|How to make &#39;python&#39; program command execute Python 3?|sudo ln -sf /usr/bin/python3 /usr/bin/python|Verifiable Minimal
+30334|What Application Indicators are available?|apt-cache search appindicator|Unverifiable Minimal
+178521|How can I decode a base64 string from the command line?|base64 --decode <<< SGVsbG8=|Verifiable Minimal
+222348|What does &quot;sudo apt-get update&quot; do?|sudo apt-get update|Verifiable Minimal
+25961|How do I install a .tar.gz (or .tar.bz2) file?|tar -xzf package.tar.gz|Verifiable Minimal
+590899|How do I check which shell I am using?|echo $SHELL|Verifiable Minimal
+257263|How to display network traffic in the terminal?|iftop|Verifiable Minimal
+58814|How do I add environment variables?|export MYVAR=value|Verifiable Minimal
+140246|How do I resolve unmet dependencies after adding a PPA?|sudo apt-get install -f|Verifiable Minimal
+2368|How do I set up a Cron job?|crontab -e|Verifiable Minimal
+89710|How do I free up more space in /boot?|sudo apt autoremove|Verifiable Minimal
+4428|How can I record my screen?|ffmpeg -f x11grab -s 1920x1080 -i :0.0 output.mp4|Verifiable
+56339|How to create a soft or symbolic link?|ln -s target linkname|Verifiable Minimal
+795226|How to list all enabled services from systemctl?|systemctl list-unit-files --state=enabled|Verifiable Minimal
+686239|How do I check the version of Ubuntu I am running?|lsb_release -a|Unverifiable Minimal
+625224|How to redirect stderr to a file|command 2> errors.txt|Verifiable Minimal
+345974|What is the difference between adduser and useradd?|man adduser|Unverifiable Minimal
+13065|How do I fix the GPG error &quot;NO_PUBKEY&quot;?|sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys KEYID|Verifiable Minimal
+17275|How to show the transfer progress and speed when copying files with cp?|rsync -ah --progress source dest|Verifiable Minimal
+23009|Why crontab scripts are not working?|grep CRON /var/log/syslog|Unknowable
+334994|Which one is better: using ; or &amp;&amp; to execute multiple commands in one line?|command1 && command2|Unknowable
+2799|How to merge several PDF files?|pdfunite file1.pdf file2.pdf merged.pdf|Verifiable Minimal
+510056|How to install Google Chrome|sudo dpkg -i google-chrome-stable_current_amd64.deb|Verifiable Minimal
+40011|How to let `dpkg -i` install dependencies for me?|sudo apt-get install -f|Verifiable Minimal
+162391|How do I fix my locale issue?|sudo locale-gen en_US.UTF-8|Verifiable Minimal
+53553|How do I retrieve the public key from a SSH private key?|ssh-keygen -y -f privatekey|Verifiable Minimal
+22743|How do I install Guest Additions in a VirtualBox VM?|sudo apt install virtualbox-guest-utils|Verifiable Minimal
+76808|How do I use variables in a sed command?|sed s/$VAR/replacement/g file|Verifiable Minimal
+18654|How to prevent updating of a specific package?|sudo apt-mark hold package-name|Verifiable Minimal
+774490|What is an &quot;AppImage&quot;? How do I install it?|chmod +x app.AppImage|Verifiable Minimal
+102093|How to see the command attached to a bash alias?|alias myalias|Verifiable Minimal
+108771|What is the difference between a hard link and a symbolic link?|man ln|Verifiable Minimal
+94102|What is the difference between apt-get update and upgrade?|sudo apt-get update|Verifiable Minimal
+50170|How to convert PDF to image?|pdftoppm input.pdf output -png|Verifiable Minimal
+221835|How do I install Ubuntu alongside a pre-installed Windows with UEFI?|sudo ubiquity|Unknowable
+41332|How do I check if I have a 32-bit or a 64-bit OS?|uname -m|Verifiable Minimal
+759880|Where is the Ubuntu file system root directory in Windows Subsystem for Linux and vice versa?|wslpath -w /|Unknowable
+107726|How to create animated GIF images of a screencast?|byzanz-record -d 10 -x 0 -y 0 -w 800 -h 600 output.gif|Verifiable Minimal
+223501|Ubuntu gets stuck in a login loop|sudo chown $USER:$USER ~/.Xauthority|Unknowable
+56104|How can I install Sun/Oracle&#39;s proprietary Java JDK or JRE?|sudo apt install default-jdk|Verifiable Minimal
+32507|How do I get a list of installed files from a package?|dpkg -L package-name|Unverifiable Minimal
+87665|How do I change the hostname without a restart?|sudo hostnamectl set-hostname newname|Verifiable Minimal
+17536|How do I create a permanent Bash alias?|echo alias myalias='mycommand' >> ~/.bashrc|Verifiable Minimal
+147241|Execute sudo without Password?|sudo visudo|Verifiable Minimal
+278448|How to know what program is listening on a given port?|sudo ss -tulpn|Verifiable Minimal
+17381|Unity doesn&#39;t load, no Launcher, no Dash appears|setsid unity|Unknowable
+4983|What are PPAs and how do I use them?|sudo add-apt-repository ppa:ppa-name|Verifiable Minimal
+25077|How to really clear the terminal?|reset|Verifiable Minimal
+275965|How to list all variables names and their current values?|printenv|Unverifiable Minimal
+81585|What is &quot;dist-upgrade&quot; and why does it upgrade more than &quot;upgrade&quot;?|sudo apt-get dist-upgrade|Verifiable Minimal
+428772|How to install specific version of some package?|sudo apt-get install package=version|Verifiable Minimal
+289559|How can I create a Windows bootable USB stick using Ubuntu?|sudo dd if=windows.iso of=/dev/sdX bs=4M status=progress|Verifiable Minimal
+162075|My computer boots to a black screen, what options do I have to fix it?|sudo ubuntu-drivers autoinstall|Unknowable
