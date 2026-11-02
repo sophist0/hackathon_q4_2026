@@ -184,13 +184,13 @@ CUTOFFS = {
     "clef-flash": {"q1": 0.07, "q2": 0.82, "q3": 0.3, "q4": 0.6},
 }
 
-# Linux cutoffs (swept 2026-11-01 on the 17:16 log with new q2 wording:
-# q3 0.12 converts 2 more TPs with zero new FPs; q2 0.22 reroutes 17
-# true Minimals from q4 to q3 with zero non-Minimals in the band, so it
-# can only add TPs — the next run scores their unobserved q3 nouls;
-# q1 0.65 and q4 0.25 hold).
+# Linux cutoffs (swept 2026-11-01 on the 18:02 log with new q2 wording:
+# q3 0.12 converts 2 more TPs with zero new FPs; q2 0.11 reroutes 9
+# true Minimals from q4 to q3 with zero non-Minimals in [0.11, 0.22),
+# so it can only cut FNs — the next run scores their unobserved q3
+# nouls; q1 0.65 and q4 0.25 hold).
 LINUX_CUTOFFS = {
-    "clef-flash": {"q1": 0.65, "q2": 0.22, "q3": 0.12, "q4": 0.25},
+    "clef-flash": {"q1": 0.65, "q2": 0.11, "q3": 0.12, "q4": 0.25},
 }
 
 
