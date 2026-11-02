@@ -17,7 +17,7 @@ questions:
     on_N: end_Unknowable
 
   - id: q2
-    text: "Does the prompt ask the system to perform an action with a checkable result, and not about things that require perfect knowledge of the system (such as whether the system logs are complete or accurate, what other users did, timestamp accuracy, etc.)? (Y/N)"
+    text: "Does the prompt ask the system to perform an action with a checkable result (install, remove, change, create, compute, or run something), and not merely to report something only the system itself could know (installed packages, disk or sensor readings, versions, users, logs, or other current-state facts)? (Y/N)"
     on_Y: q3
     on_N: q4
 

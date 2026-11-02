@@ -186,3 +186,14 @@ def test_configured_clef_flash_cutoffs_split_evaluable_and_minimal():
     # 0.55 sits just under the q4=0.6 line: pins the threading choice.
     assert run_with(0.2, 0.55)["predicted_label"] == "end_Unverifiable"
     assert run_with(0.2, 0.65)["predicted_label"] == "end_Unverifiable_Minimal"
+
+
+def test_resolve_cutoff_picks_tree_specific_tunings():
+    assert rpc.resolve_cutoff("question_tree.yml", "clef-flash") == {
+        "q1": 0.07, "q2": 0.82, "q3": 0.3, "q4": 0.6,
+    }
+    assert rpc.resolve_cutoff("question_tree_linux.yml", "clef-flash") == {
+        "q1": 0.65, "q2": 0.22, "q3": 0.12, "q4": 0.25,
+    }
+    assert rpc.resolve_cutoff("question_tree_linux.yml", "jev") == 0.5
+    assert rpc.resolve_cutoff("other_tree.yml", "clef-flash") == 0.5

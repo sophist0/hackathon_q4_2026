@@ -25,6 +25,17 @@ from logger import read_jsonl
 
 HISTOGRAM_BINS = 10
 
+# The framework's fixed target set (both tree files' ``target_labels``).
+# Reports and plots always cover all five, even when a ground-truth CSV
+# has no rows for one of them.
+TARGET_LABELS = (
+    "Unknowable",
+    "Verifiable Minimal",
+    "Verifiable",
+    "Unverifiable Minimal",
+    "Unverifiable",
+)
+
 
 def strip_leaf_prefix(predicted_label: str) -> str:
     """Turn ``end_Verifiable_Minimal`` into ``Verifiable_Minimal``."""
@@ -148,11 +159,45 @@ class BackendScore:
 
 
 @dataclass
+class BinaryScore:
+    """Verifiable-Minimal-vs-rest counts for one backend."""
+
+    tp: int = 0  # predicted Minimal, actually Minimal
+    fp: int = 0  # predicted Minimal, actually not
+    fn: int = 0  # predicted other, actually Minimal
+    tn: int = 0  # predicted other, actually not
+
+    @property
+    def n(self) -> int:
+        return self.tp + self.fp + self.fn + self.tn
+
+    @property
+    def accuracy(self) -> float | None:
+        return (self.tp + self.tn) / self.n if self.n else None
+
+    @property
+    def precision(self) -> float | None:
+        denom = self.tp + self.fp
+        return self.tp / denom if denom else None
+
+    @property
+    def recall(self) -> float | None:
+        denom = self.tp + self.fn
+        return self.tp / denom if denom else None
+
+    @property
+    def specificity(self) -> float | None:
+        denom = self.tn + self.fp
+        return self.tn / denom if denom else None
+
+
+@dataclass
 class Comparison:
     """Result of scoring logger rows against the ground truth."""
 
     per_backend: dict[str, BackendScore] = field(default_factory=dict)
     per_category: dict[str, dict[str, BackendScore]] = field(default_factory=dict)
+    binary: dict[str, BinaryScore] = field(default_factory=dict)
     agreement_n: int = 0  # prompts covered by 2+ backends
     agreement_agree: int = 0  # ... where every backend predicted the same label
     diverged: list[str] = field(default_factory=list)  # prompt_texts backends disagree on
@@ -249,6 +294,7 @@ def _row_correct(row: Mapping[str, Any], candidates: list[dict[str, str]]) -> bo
 def compare(
     rows: Iterable[Mapping[str, Any]],
     ground_truth: GroundTruth,
+    categories: Iterable[str] | None = None,
 ) -> Comparison:
     """Score logger rows (any mix of backends) against the ground truth.
 
@@ -256,7 +302,13 @@ def compare(
     no ground-truth entry, are unscored. Every row scores, so passing
     overlapping logs (e.g. a one-off plus a full run) counts the shared
     ``row_id`` once per run; such repeats are listed in ``repeated``.
+    ``categories`` lists every target label (defaults to the five
+    ``target_labels``). Targets with no ground-truth rows still appear in
+    the per-category table and confusion matrices as 0/0, so reports stay
+    comparable across systems with different label coverage.
     """
+    if categories is None:
+        categories = TARGET_LABELS
     groups: dict[str, dict[str, list[Mapping[str, Any]]]] = defaultdict(
         lambda: defaultdict(list)
     )
@@ -291,6 +343,11 @@ def compare(
         flat: list[Mapping[str, Any]] = [
             row for runs in per_backend.values() for row in runs
         ]
+        actual_minimal = any(
+            entry["category"]
+            and canonical_label(entry["category"]) == canonical_label("Verifiable Minimal")
+            for entry in candidates
+        )
         for backend, runs in per_backend.items():
             for row in runs:
                 confidences[backend].extend(parse_confidences(row))
@@ -304,6 +361,16 @@ def compare(
                 correct = _row_correct(row, candidates)
                 if correct:
                     score.correct += 1
+                binary = result.binary.setdefault(backend, BinaryScore())
+                if predicted == canonical_label("Verifiable Minimal"):
+                    if actual_minimal:
+                        binary.tp += 1
+                    else:
+                        binary.fp += 1
+                elif actual_minimal:
+                    binary.fn += 1
+                else:
+                    binary.tn += 1
                 for category in {entry["category"] for entry in candidates if entry["category"]}:
                     cell = result.per_category.setdefault(category, {}).setdefault(
                         backend, BackendScore()
@@ -327,6 +394,12 @@ def compare(
                 result.diverged.append(label)
         if not any(_row_correct(row, candidates) for row in flat):
             result.all_missed.append(label)
+    for category in categories or ():
+        for backend in result.per_backend:
+            result.per_category.setdefault(category, {}).setdefault(
+                backend, BackendScore()
+            )
+            result.confusion.setdefault(backend, {}).setdefault(category, {})
     result.histograms = {
         backend: _histogram(values) for backend, values in confidences.items()
     }
@@ -334,13 +407,15 @@ def compare(
 
 
 def compare_files(
-    log_paths: Iterable[str | Path], ground_truth_path: str | Path
+    log_paths: Iterable[str | Path],
+    ground_truth_path: str | Path,
+    categories: Iterable[str] | None = None,
 ) -> Comparison:
     """Read one or more JSONL logs and score them against a ground-truth CSV."""
     rows: list[dict[str, str]] = []
     for log_path in log_paths:
         rows.extend(read_jsonl(log_path))
-    return compare(rows, load_ground_truth(ground_truth_path))
+    return compare(rows, load_ground_truth(ground_truth_path), categories)
 
 
 def _pct(value: float | None) -> str:
@@ -381,6 +456,13 @@ def format_report(comparison: Comparison) -> str:
                 f" P {_pr(precision)} R {_pr(recall)}"
             )
         lines.append(f"  {category}: {'  '.join(cells)}")
+    lines.append("\nVerifiable Minimal vs rest (accuracy, precision, recall, specificity):\n")
+    for backend, binary in sorted(comparison.binary.items()):
+        lines.append(
+            f"  {backend}: acc {_pct(binary.accuracy)}"
+            f" P {_pr(binary.precision)} R {_pr(binary.recall)} S {_pr(binary.specificity)}"
+            f" (tp {binary.tp} fp {binary.fp} fn {binary.fn} tn {binary.tn})"
+        )
     lines.append(
         f"\nagreement: {comparison.agreement_agree}/{comparison.agreement_n} "
         f" ({_pct(comparison.agreement_rate)})\n"
@@ -412,12 +494,19 @@ def main(argv: list[str] | None = None) -> int:
         default="data/shuffled_prompts_4.csv",
         help="ground-truth CSV (Categorization labels are the baseline)",
     )
+    parser.add_argument(
+        "--categories",
+        nargs="*",
+        default=None,
+        help="every target label (default: all five target_labels); "
+        "targets missing from the CSV still report as 0/0",
+    )
     parser.add_argument("--json", action="store_true", help="emit the report as JSON")
     parser.add_argument(
         "--plot", default=None, help="save per-backend confusion matrices as a PNG"
     )
     args = parser.parse_args(argv)
-    comparison = compare_files(args.logs, args.ground_truth)
+    comparison = compare_files(args.logs, args.ground_truth, args.categories)
     if args.plot:
         out = plot_confusion(comparison, args.plot)
         print(f"wrote confusion matrix to {out}")
@@ -430,6 +519,14 @@ def main(argv: list[str] | None = None) -> int:
                         for backend, score in comparison.per_backend.items()
                     },
                     "agreement_rate": comparison.agreement_rate,
+                    "binary": {
+                        backend: {
+                            "tp": b.tp, "fp": b.fp, "fn": b.fn, "tn": b.tn,
+                            "accuracy": b.accuracy, "precision": b.precision,
+                            "recall": b.recall, "specificity": b.specificity,
+                        }
+                        for backend, b in comparison.binary.items()
+                    },
                     "diverged": comparison.diverged,
                     "all_missed": comparison.all_missed,
                     "ambiguous": comparison.ambiguous,
