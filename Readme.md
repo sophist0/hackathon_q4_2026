@@ -202,6 +202,10 @@ Score the run with:
 python comparator.py logs/<newfile>.jsonl --ground-truth data/linux_question_responses_groundtruth.csv
 ```
 
+All five target labels always appear in the table and confusion
+matrix, even though the Linux set has no `Unverifiable` rows (it
+reports 0/0 instead of being dropped).
+
 ## Where logged results go
 
 You choose the path: `write_jsonl` and `write_csv` write exactly where

@@ -42,9 +42,9 @@ def test_tree_transitions_follow_code_not_draft():
     assert (by_id["q1"].on_Y, by_id["q1"].on_N) == ("q2", "end_Unknowable")
     assert (by_id["q2"].on_Y, by_id["q2"].on_N) == ("q3", "q4")
     # q2 rule: "perform an action" (Y, verifiable branch) vs things only
-    # perfect knowledge of the service could tell you (N, unverifiable).
+    # perfect knowledge of the system could tell you (N, unverifiable).
     assert "perform an action" in by_id["q2"].text
-    assert "perfect knowledge of the service" in by_id["q2"].text
+    assert "perfect knowledge of the system" in by_id["q2"].text
     assert (by_id["q3"].on_Y, by_id["q3"].on_N) == (
         "end_Verifiable_Minimal",
         "end_Verifiable",

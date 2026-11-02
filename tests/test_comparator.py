@@ -219,6 +219,36 @@ def test_compare_builds_confusion_matrix():
     assert "Verifiable Minimal" in report
 
 
+def test_compare_seeds_missing_target_categories(tmp_path):
+    rows = [_row("add 5 and 7", "jev", "end_Verifiable_Minimal")]
+    result = compare(
+        rows, TRUTH, ["Verifiable Minimal", "Unknowable", "Unverifiable"]
+    )
+    assert result.per_category["Unverifiable"]["jev"].n == 0
+    assert result.per_category["Unverifiable"]["jev"].accuracy is None
+    assert result.confusion["jev"]["Unverifiable"] == {}
+    assert "Unverifiable" in format_report(result)
+    out = plot_confusion(result, tmp_path / "confusion.png")
+    assert out.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+
+
+def test_compare_reports_minimal_vs_rest_binary():
+    rows = [
+        _row("add 5 and 7", "jev", "end_Verifiable_Minimal"),
+        _row("divide 100 by 4", "jev", "end_Verifiable_Minimal"),
+        _row("empty logs", "jev", "end_Unknowable"),
+    ]
+    result = compare(rows, TRUTH)
+    binary = result.binary["jev"]
+    assert (binary.tp, binary.fp, binary.fn, binary.tn) == (1, 1, 1, 0)
+    assert binary.accuracy == 1 / 3
+    assert binary.precision == 0.5
+    assert binary.recall == 0.5
+    assert binary.specificity == 0.0
+    report = format_report(result)
+    assert "Verifiable Minimal vs rest" in report
+
+
 def test_plot_confusion_saves_png(tmp_path):
     truth = _truth(
         ("1", "p1", "e", "Verifiable Minimal"),

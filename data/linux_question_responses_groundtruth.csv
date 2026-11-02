@@ -7,10 +7,10 @@ Question_id|Title|Response|Categorization
 420981|How do I save terminal output to a file?|command > output.txt 2>&1|Verifiable Minimal
 86822|How can I copy the contents of a folder to another folder in a different directory using terminal?|cp -r sourcedir/. destdir/|Verifiable Minimal
 25347|What command do I need to unzip/extract a .tar.gz file?|tar -xzf archive.tar.gz|Verifiable Minimal
-1224|How do I determine the total size of a directory (folder) from the command line?|du -sh directory|Unverifiable Minimal
+1224|How do I determine the total size of a directory (folder) from the command line?|du -sh directory|Verifiable Minimal
 56683|Where is the cron / crontab log?|grep CRON /var/log/syslog|Verifiable Minimal
 477551|How can I use Docker without sudo?|sudo usermod -aG docker $USER|Verifiable Minimal
-15433|Unable to lock the administration directory (/var/lib/dpkg/) is another process using it?|sudo dpkg --configure -a|Unverifiable Minimal
+15433|Unable to lock the administration directory (/var/lib/dpkg/) is another process using it?|sudo dpkg --configure -a|Verifiable Minimal
 426750|How can I update my nodeJS to the latest version?|sudo npm install -g n && sudo n latest|Verifiable Minimal
 44122|How to upgrade a single package using apt-get?|sudo apt-get install --only-upgrade package-name|Verifiable Minimal
 410244|Is there a command to list all users? Also to add, delete, modify users, in the terminal?|cut -d: -f1 /etc/passwd|Unverifiable Minimal
@@ -32,7 +32,7 @@ Question_id|Title|Response|Categorization
 215505|How do you monitor the progress of dd?|dd if=input of=output status=progress|Verifiable Minimal
 95910|Command for determining my public IP?|curl ifconfig.me|Verifiable Minimal
 445384|What is the difference between apt and apt-get?|man apt|Unverifiable Minimal
-113544|How can I reduce the file size of a scanned PDF file?|gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/ebook -dNOPAUSE -dBATCH -sOutputFile=output.pdf input.pdf|Verifiable
+113544|How can I reduce the file size of a scanned PDF file?|gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/ebook -dNOPAUSE -dBATCH -sOutputFile=output.pdf input.pdf|Verifiable Minimal
 73160|How do I find the amount of free space on my hard drive?|df -h|Unverifiable Minimal
 56326|How do I rename a directory via the command line?|mv old-directory new-directory|Verifiable Minimal
 24006|How do I reset a lost administrative password?|sudo passwd username|Verifiable Minimal
@@ -44,7 +44,7 @@ Question_id|Title|Response|Categorization
 814|How to run scripts on start up?|crontab -e|Verifiable Minimal
 15832|How do I get the CPU temperature?|sensors|Unverifiable Minimal
 187888|What is the correct way to completely remove an application?|sudo apt purge application-name|Unknowable
-4408|What should I do when Ubuntu freezes?|sudo systemctl reboot|Unknowable
+4408|What should I do when Ubuntu freezes?|sudo systemctl reboot|Verifiable Minimal
 2793|How do I remove old kernel versions to clean up the boot menu?|sudo apt autoremove|Verifiable Minimal
 320996|How to make &#39;python&#39; program command execute Python 3?|sudo ln -sf /usr/bin/python3 /usr/bin/python|Verifiable Minimal
 30334|What Application Indicators are available?|apt-cache search appindicator|Unverifiable Minimal
@@ -60,12 +60,12 @@ Question_id|Title|Response|Categorization
 4428|How can I record my screen?|ffmpeg -f x11grab -s 1920x1080 -i :0.0 output.mp4|Verifiable
 56339|How to create a soft or symbolic link?|ln -s target linkname|Verifiable Minimal
 795226|How to list all enabled services from systemctl?|systemctl list-unit-files --state=enabled|Verifiable Minimal
-686239|How do I check the version of Ubuntu I am running?|lsb_release -a|Unverifiable Minimal
+686239|How do I check the version of Ubuntu I am running?|lsb_release -a|Verifiable Minimal
 625224|How to redirect stderr to a file|command 2> errors.txt|Verifiable Minimal
 345974|What is the difference between adduser and useradd?|man adduser|Unverifiable Minimal
 13065|How do I fix the GPG error &quot;NO_PUBKEY&quot;?|sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys KEYID|Verifiable Minimal
 17275|How to show the transfer progress and speed when copying files with cp?|rsync -ah --progress source dest|Verifiable Minimal
-23009|Why crontab scripts are not working?|grep CRON /var/log/syslog|Unknowable
+23009|Why crontab scripts are not working?|grep CRON /var/log/syslog|Unverifiable Minimal
 334994|Which one is better: using ; or &amp;&amp; to execute multiple commands in one line?|command1 && command2|Unknowable
 2799|How to merge several PDF files?|pdfunite file1.pdf file2.pdf merged.pdf|Verifiable Minimal
 510056|How to install Google Chrome|sudo dpkg -i google-chrome-stable_current_amd64.deb|Verifiable Minimal
@@ -76,15 +76,15 @@ Question_id|Title|Response|Categorization
 76808|How do I use variables in a sed command?|sed s/$VAR/replacement/g file|Verifiable Minimal
 18654|How to prevent updating of a specific package?|sudo apt-mark hold package-name|Verifiable Minimal
 774490|What is an &quot;AppImage&quot;? How do I install it?|chmod +x app.AppImage|Verifiable Minimal
-102093|How to see the command attached to a bash alias?|alias myalias|Verifiable Minimal
-108771|What is the difference between a hard link and a symbolic link?|man ln|Verifiable Minimal
+102093|How to see the command attached to a bash alias?|alias myalias|Unverifiable Minimal
+108771|What is the difference between a hard link and a symbolic link?|man ln|Unverifiable Minimal
 94102|What is the difference between apt-get update and upgrade?|sudo apt-get update|Verifiable Minimal
 50170|How to convert PDF to image?|pdftoppm input.pdf output -png|Verifiable Minimal
 221835|How do I install Ubuntu alongside a pre-installed Windows with UEFI?|sudo ubiquity|Unknowable
 41332|How do I check if I have a 32-bit or a 64-bit OS?|uname -m|Verifiable Minimal
 759880|Where is the Ubuntu file system root directory in Windows Subsystem for Linux and vice versa?|wslpath -w /|Unknowable
 107726|How to create animated GIF images of a screencast?|byzanz-record -d 10 -x 0 -y 0 -w 800 -h 600 output.gif|Verifiable Minimal
-223501|Ubuntu gets stuck in a login loop|sudo chown $USER:$USER ~/.Xauthority|Unknowable
+223501|Ubuntu gets stuck in a login loop|sudo chown $USER:$USER ~/.Xauthority|Verifiable Minimal
 56104|How can I install Sun/Oracle&#39;s proprietary Java JDK or JRE?|sudo apt install default-jdk|Verifiable Minimal
 32507|How do I get a list of installed files from a package?|dpkg -L package-name|Unverifiable Minimal
 87665|How do I change the hostname without a restart?|sudo hostnamectl set-hostname newname|Verifiable Minimal
@@ -98,4 +98,4 @@ Question_id|Title|Response|Categorization
 81585|What is &quot;dist-upgrade&quot; and why does it upgrade more than &quot;upgrade&quot;?|sudo apt-get dist-upgrade|Verifiable Minimal
 428772|How to install specific version of some package?|sudo apt-get install package=version|Verifiable Minimal
 289559|How can I create a Windows bootable USB stick using Ubuntu?|sudo dd if=windows.iso of=/dev/sdX bs=4M status=progress|Verifiable Minimal
-162075|My computer boots to a black screen, what options do I have to fix it?|sudo ubuntu-drivers autoinstall|Unknowable
+162075|My computer boots to a black screen, what options do I have to fix it?|sudo ubuntu-drivers autoinstall|Verifiable Minimal

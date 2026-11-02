@@ -184,6 +184,25 @@ CUTOFFS = {
     "clef-flash": {"q1": 0.07, "q2": 0.82, "q3": 0.3, "q4": 0.6},
 }
 
+# Linux cutoffs (swept 2026-11-01 on the 17:16 log with new q2 wording:
+# q3 0.12 converts 2 more TPs with zero new FPs; q2 0.22 reroutes 17
+# true Minimals from q4 to q3 with zero non-Minimals in the band, so it
+# can only add TPs — the next run scores their unobserved q3 nouls;
+# q1 0.65 and q4 0.25 hold).
+LINUX_CUTOFFS = {
+    "clef-flash": {"q1": 0.65, "q2": 0.22, "q3": 0.12, "q4": 0.25},
+}
+
+
+def resolve_cutoff(tree_path, backend):
+    """Pick the cutoff map for a tree: tuned adder cutoffs, tuned Linux
+    cutoffs, or the flat 0.5 default for anything else."""
+    if tree_path == "question_tree_linux.yml":
+        return LINUX_CUTOFFS.get(backend, 0.5)
+    if tree_path == "question_tree.yml":
+        return CUTOFFS.get(backend, 0.5)
+    return 0.5
+
 
 def main(argv=None):
 
@@ -200,14 +219,11 @@ def main(argv=None):
     rows = load_ground_truth_rows(args.csv)
     now = datetime.now()
     ctime = now.strftime("%Y-%m-%d %H:%M:%S")
-    # Adder cutoffs were swept on the adder logs only; other systems
-    # start at the 0.5 default until their own sweep says otherwise.
-    use_tuned_cutoffs = args.tree == "question_tree.yml"
 
     if RUNALL:
         # muse spark run costs ~$0.70, ~5min to run
         for index, (backend, transport) in enumerate(BACKENDS):
-            cutoff = CUTOFFS.get(backend, 0.5) if use_tuned_cutoffs else 0.5
+            cutoff = resolve_cutoff(args.tree, backend)
             results = run_all(
                 rows, tree, backend, transport,
                 cutoff=cutoff, base_dir=".",
@@ -217,7 +233,7 @@ def main(argv=None):
         rdx = 0     # TEST only the first prompt
         for index, (backend, transport) in enumerate(BACKENDS):
             print("{}: {}".format(backend, index))
-            cutoff = CUTOFFS.get(backend, 0.5) if use_tuned_cutoffs else 0.5
+            cutoff = resolve_cutoff(args.tree, backend)
             result = run_prompt(
                 rows[rdx], tree, backend, transport, threshold=0.5,
                 cutoff=cutoff, base_dir=".",
