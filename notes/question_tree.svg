@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="210mm"
-   height="297mm"
-   viewBox="0 0 210 297"
+   width="207.23183mm"
+   height="173.04547mm"
+   viewBox="0 0 207.23183 173.04547"
    version="1.1"
    id="svg1"
    inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
@@ -26,10 +26,10 @@
      showgrid="true"
      showguides="true"
      inkscape:zoom="1.4142136"
-     inkscape:cx="468.45824"
-     inkscape:cy="446.89149"
-     inkscape:window-width="1867"
-     inkscape:window-height="1011"
+     inkscape:cx="544.47221"
+     inkscape:cy="283.19626"
+     inkscape:window-width="2560"
+     inkscape:window-height="1363"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
@@ -37,8 +37,8 @@
     <inkscape:grid
        id="grid1"
        units="mm"
-       originx="0"
-       originy="0"
+       originx="-2.4110665"
+       originy="-21.034332"
        spacingx="0.26458333"
        spacingy="0.26458334"
        empcolor="#3f3fff"
@@ -48,31 +48,6 @@
        empspacing="5"
        enabled="true"
        visible="true" />
-    <sodipodi:guide
-       position="51.929659,275.76561"
-       orientation="0,-1"
-       id="guide1"
-       inkscape:locked="false" />
-    <sodipodi:guide
-       position="59.164102,249.43122"
-       orientation="0,-1"
-       id="guide2"
-       inkscape:locked="false" />
-    <sodipodi:guide
-       position="108.44685,242.64436"
-       orientation="1,0"
-       id="guide3"
-       inkscape:locked="false" />
-    <sodipodi:guide
-       position="95.387239,244.10127"
-       orientation="1,0"
-       id="guide4"
-       inkscape:locked="false" />
-    <sodipodi:guide
-       position="121.71671,241.7073"
-       orientation="1,0"
-       id="guide5"
-       inkscape:locked="false" />
   </sodipodi:namedview>
   <defs
      id="defs1">
@@ -118,9 +93,50 @@
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1">
+     id="layer1"
+     transform="translate(-2.4110665,-21.034333)">
     <path
-       style="fill:#ffffff;stroke:#00001a;stroke-width:0.4;stroke-linecap:square;fill-opacity:1"
+       style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Triangle)"
+       d="M 48.455963,149.67093 30.308364,170.81195"
+       id="path14"
+       sodipodi:nodetypes="cc" />
+    <rect
+       style="fill:#ffffff;stroke:#000000;stroke-width:0.4;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect11"
+       width="53.22905"
+       height="10.947011"
+       x="135.03011"
+       y="55.38443" />
+    <rect
+       style="fill:#ffffff;stroke:#000000;stroke-width:0.4;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect11-3"
+       width="43.159561"
+       height="10.793218"
+       x="166.28333"
+       y="171.94272" />
+    <rect
+       style="fill:#ffffff;stroke:#000000;stroke-width:0.4;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect11-1"
+       width="42.859631"
+       height="21.344427"
+       x="113.52486"
+       y="158.66513" />
+    <rect
+       style="fill:#ffffff;stroke:#000000;stroke-width:0.398613;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect11-36"
+       width="52.48848"
+       height="10.580618"
+       x="55.983635"
+       y="158.36789" />
+    <rect
+       style="fill:#ffffff;stroke:#000000;stroke-width:0.43923;stroke-dasharray:none;stroke-dashoffset:0"
+       id="rect11-18"
+       width="52.917171"
+       height="21.486273"
+       x="2.6306815"
+       y="172.37392" />
+    <path
+       style="fill:#ffffff;fill-opacity:1;stroke:#00001a;stroke-width:0.4;stroke-linecap:square"
        id="path5"
        sodipodi:type="arc"
        sodipodi:cx="108.37951"
@@ -192,6 +208,172 @@
          x="46.798386"
          y="143.91389">Q3</tspan></text>
     <path
+       style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Triangle)"
+       d="m 108.51143,46.772166 -0.18709,26.192415"
+       id="path6"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Triangle)"
+       d="m 100.46661,98.22155 -33.114691,33.1147"
+       id="path8"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker10)"
+       d="m 115.6208,97.660285 34.42431,33.675955"
+       id="path9"
+       sodipodi:nodetypes="cc" />
+    <text
+       xml:space="preserve"
+       style="font-size:8.46667px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
+       x="136.3932"
+       y="63.82383"
+       id="text10"><tspan
+         sodipodi:role="line"
+         id="tspan10"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.46667px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.264583"
+         x="136.3932"
+         y="63.82383">Unknowable</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:8.46667px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
+       x="169.45006"
+       y="180.14078"
+       id="text10-0"><tspan
+         sodipodi:role="line"
+         id="tspan10-2"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.46667px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.264583"
+         x="169.45006"
+         y="180.14078">Verifiable</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:8.46667px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
+       x="116.17545"
+       y="167.18564"
+       id="text10-0-2"><tspan
+         sodipodi:role="line"
+         id="tspan10-2-2"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.46667px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.264583"
+         x="116.17545"
+         y="167.18564">Verifiable</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.46667px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.264583"
+         x="116.17545"
+         y="177.76898"
+         id="tspan11">Minimal</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:8.46667px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
+       x="4.8513966"
+       y="180.52972"
+       id="text10-0-6"><tspan
+         sodipodi:role="line"
+         id="tspan10-2-1"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.46667px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.264583"
+         x="4.8513966"
+         y="180.52972">Unverifiable</tspan><tspan
+         sodipodi:role="line"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.46667px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.264583"
+         x="4.8513966"
+         y="191.11307"
+         id="tspan12">Mininal</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:8.46667px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
+       x="58.0653"
+       y="166.68176"
+       id="text10-0-9"><tspan
+         sodipodi:role="line"
+         id="tspan10-2-4"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.46667px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.264583"
+         x="58.0653"
+         y="166.68176">Unverifiable</tspan></text>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker10)"
+       d="m 169.31524,150.60637 17.77343,20.20558"
+       id="path11"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Triangle)"
+       d="m 153.97397,149.85802 -4.86431,7.29646"
+       id="path12"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Triangle)"
+       d="m 63.235968,150.79346 4.677218,6.36102"
+       id="path13"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Triangle)"
+       d="M 118.61421,42.282038 133.7684,54.442801"
+       id="path15"
+       sodipodi:nodetypes="cc" />
+    <text
+       xml:space="preserve"
+       style="font-size:8.46667px;line-height:1.25;font-family:sans-serif;stroke-width:0.264583"
+       x="102.80247"
+       y="63.610142"
+       id="text15"><tspan
+         sodipodi:role="line"
+         id="tspan15"
+         style="font-size:8.46667px;stroke-width:0.264583"
+         x="102.80247"
+         y="63.610142">Y</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:8.46667px;line-height:1.25;font-family:sans-serif;stroke-width:0.264583"
+       x="79.375008"
+       y="114.2598"
+       id="text15-2"><tspan
+         sodipodi:role="line"
+         id="tspan15-3"
+         style="font-size:8.46667px;stroke-width:0.264583"
+         x="79.375008"
+         y="114.2598">Y</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:8.46667px;line-height:1.25;font-family:sans-serif;stroke-width:0.264583"
+       x="31.750006"
+       y="164.26595"
+       id="text15-2-3"><tspan
+         sodipodi:role="line"
+         id="tspan15-3-6"
+         style="font-size:8.46667px;stroke-width:0.264583"
+         x="31.750006"
+         y="164.26595">Y</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:8.46667px;line-height:1.25;font-family:sans-serif;stroke-width:0.264583"
+       x="145.52078"
+       y="153.9473"
+       id="text15-2-2"><tspan
+         sodipodi:role="line"
+         id="tspan15-3-0"
+         style="font-size:8.46667px;stroke-width:0.264583"
+         x="145.52078"
+         y="153.9473">Y</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:8.46667px;line-height:1.25;font-family:sans-serif;stroke-width:0.264583"
+       x="126.09776"
+       y="47.862598"
+       id="text16"><tspan
+         sodipodi:role="line"
+         id="tspan16"
+         style="font-size:8.46667px;stroke-width:0.264583"
+         x="126.09776"
+         y="47.862598">N</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:8.46667px;line-height:1.25;font-family:sans-serif;stroke-width:0.264583"
+       x="132.79338"
+       y="113.73062"
+       id="text16-2"><tspan
+         sodipodi:role="line"
+         id="tspan16-8"
+         style="font-size:8.46667px;stroke-width:0.264583"
+         x="132.79338"
+         y="113.73062">N</tspan></text>
+    <path
        style="fill:#ffffff;fill-opacity:1;stroke:#00001a;stroke-width:0.4;stroke-linecap:square"
        id="path5-2"
        sodipodi:type="arc"
@@ -215,85 +397,27 @@
          style="font-size:12.7px;stroke-width:0.264583"
          x="152.78896"
          y="144.08913">Q4</tspan></text>
-    <path
-       style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Triangle)"
-       d="m 108.51143,46.772166 -0.18709,26.192415"
-       id="path6"
-       sodipodi:nodetypes="cc" />
-    <path
-       style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Triangle)"
-       d="m 100.46661,98.22155 -33.114691,33.1147"
-       id="path8"
-       sodipodi:nodetypes="cc" />
-    <path
-       style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#marker10)"
-       d="m 116.55624,97.847374 33.48887,33.488866"
-       id="path9"
-       sodipodi:nodetypes="cc" />
     <text
        xml:space="preserve"
-       style="font-size:8.46667px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
-       x="139.94234"
-       y="61.739258"
-       id="text10"><tspan
+       style="font-size:8.46667px;line-height:1.25;font-family:sans-serif;stroke-width:0.264583"
+       x="181.7412"
+       y="164.26595"
+       id="text16-1"><tspan
          sodipodi:role="line"
-         id="tspan10"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.46667px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.264583"
-         x="139.94234"
-         y="61.739258">Unknowable</tspan></text>
+         id="tspan16-2"
+         style="font-size:8.46667px;stroke-width:0.264583"
+         x="181.7412"
+         y="164.26595">N</tspan></text>
     <text
        xml:space="preserve"
-       style="font-size:8.46667px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
-       x="174.74165"
-       y="181.72826"
-       id="text10-0"><tspan
+       style="font-size:8.46667px;line-height:1.25;font-family:sans-serif;stroke-width:0.264583"
+       x="66.118317"
+       y="153.68272"
+       id="text16-4"><tspan
          sodipodi:role="line"
-         id="tspan10-2"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.46667px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.264583"
-         x="174.74165"
-         y="181.72826">Verifiable</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:8.46667px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
-       x="113.00045"
-       y="180.41463"
-       id="text10-0-2"><tspan
-         sodipodi:role="line"
-         id="tspan10-2-2"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.46667px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.264583"
-         x="113.00045"
-         y="180.41463">Verifiable</tspan><tspan
-         sodipodi:role="line"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.46667px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.264583"
-         x="113.00045"
-         y="190.99797"
-         id="tspan11">Minimal</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:8.46667px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
-       x="-9.9652691"
-       y="182.1172"
-       id="text10-0-6"><tspan
-         sodipodi:role="line"
-         id="tspan10-2-1"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.46667px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.264583"
-         x="-9.9652691"
-         y="182.1172">Unverifiable</tspan><tspan
-         sodipodi:role="line"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.46667px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.264583"
-         x="-9.9652691"
-         y="192.70055"
-         id="tspan12">Mininal</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:8.46667px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;stroke-width:0.264583"
-       x="53.302795"
-       y="183.08571"
-       id="text10-0-9"><tspan
-         sodipodi:role="line"
-         id="tspan10-2-4"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.46667px;font-family:sans-serif;-inkscape-font-specification:sans-serif;stroke-width:0.264583"
-         x="53.302795"
-         y="183.08571">Unverifiable</tspan></text>
+         id="tspan16-7"
+         style="font-size:8.46667px;stroke-width:0.264583"
+         x="66.118317"
+         y="153.68272">N</tspan></text>
   </g>
 </svg>
