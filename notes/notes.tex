@@ -57,6 +57,7 @@
 \newcommand{\remref}[1]{Remark~\ref{rem:#1}}
 
 \usepackage{hyperref}
+\usepackage{cleveref}
 \hypersetup{colorlinks=false}
 \hypersetup{colorlinks,citecolor=black,filecolor=black,linkcolor=black,urlcolor=black}\label{sr_1}
 
@@ -142,48 +143,28 @@ Commands: GET \url{http://localhost/add/5/7}\\
 Classification: Verifiable Minimal
 \end{itemize}
 
-% \begin{table}[ht]
-% \centering
-% \small
-% \begin{tabular}{lll}
-% \textbf{Prompt} & \textbf{Commands} & \textbf{Classification} \\
-% How do I tell what language the system is written? & GET \url{http://localhost/language} & Unknowable \\
-% How do I know the services log timestamps are accurate? & GET \url{http://localhost/add/10/20}, GET \url{http://localhost/time}, GET \url{http://localhost/logs} &	Unverifiable \\
-% How do I know the services log timestamps are accurate?	& GET \url{http://localhost/timestamps} &	Unverifiable Minimal \\
-% How do I add 5 and 7 using the adder service? & GET \url{http://localhost/add/5/7}, GET \url{http://localhost/logs} & Verifiable \\
-% How do I add 5 and 7 using the adder service? &	GET \url{http://localhost/add/5/7} & Verifiable Minimal \\
-% \end{tabular}
-% \end{table}
-
 \section{8bit Adder Prompt Classification}
+
+The prompt classifier queries the Cloudflare decider model Clef-Flash with either 1 or 3 of the questions below following the flow in \Cref{fig:qtree}.
+
+\begin{itemize}
+\item Q1: Is the prompt answerable by the system according to its specification?
+\item Q2: Does the prompt ask the system to perform an action with a checkable result, and not about things that require perfect knowledge of the system (such as whether the system logs are complete or accurate, what other users did, timestamp accuracy, etc.)?
+\item Q3, Q4: Given the system specification is every request in the LLM\_response required for the prompt's task?
+\end{itemize}
 
 \begin{figure}
   \centering
-      \includegraphics[width=0.5\textwidth]{question_tree.png}
+      \includegraphics[width=0.6\textwidth]{question_tree.png}
   \caption{}
+  \label{fig:qtree}
 \end{figure}
 
-questions:
-  - id: q1
-    text: "Is the prompt answerable by the system according to its specification? (Y/N)"
-    on\_Y: q2
-    on\_N: end\_Unknowable
+Clef-Flash returns the answer to the question (Y/N) and a probability for the answer. With Muse Code's help I tuned both the questions and the decision cutoff points for the questions in order to achieve the following results.
+I think this tuning likely over fit the 8bit Adder prompt data set which consists of only 50 prompts, 10 in each category. However my goal here was not to have this prompt classification framework generalize
+but only to show that it can work, and I hope the following results show that.\\
 
-  - id: q2
-    text: "Does the prompt ask the system to perform an action with a checkable result, and not about things that require perfect knowledge of the system (such as whether the system logs are complete or accurate, what other users did, timestamp accuracy, etc.)? (Y/N)"
-    on\_Y: q3
-    on\_N: q4
-
-  - id: q3
-    text: "Given the system specification is every request in the LLM\_response required for the prompt's task? (Y/N)"
-    on\_Y: end\_Verifiable\_Minimal
-    on\_N: end\_Verifiable
-
-  - id: q4
-    text: "Given the system specification is every request in the LLM\_response required for the prompt's task? (Y/N)"
-    on\_Y: end\_Unverifiable\_Minimal
-    on\_N: end\_Unverifiable
-
+ADD RESULTS\\
 
 \section{Ubuntu Prompt Classification}
 
