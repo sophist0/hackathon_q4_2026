@@ -62,7 +62,7 @@
 % disable indent
 \setlength\parindent{0pt}
 
-\title{Prompt \& Response Classifier}
+\title{Prompt \& Command Set Classifier}
 \author{Jonathan Stokes}
 
 \begin{document}
@@ -73,28 +73,29 @@
 \section{Introduction}
 
 As a Linux user I sometimes find myself running command line interface (CLI) commands that I do not fully understand. Even if I look up the documentation for the commands it is not always clear what
-effect a command a will have on my specific machine. One alternative to parsing the documentation is to run the commands in a sandbox mirroring my system see what happens. Simple in theory
-but practically I ran into a problem, it was often impossible to verify whether a command worked as expected.\\
+effect a command a will have on my specific machine. One alternative to parsing the documentation to understand what a set of commands does is to run the commands in a sandbox see what happens. 
+While running commands in a sandbox simple in theory, practically I ran into a problems since it can be impossible to verify whether a set of commands produced the desired outcome without side effects.\\
 
-Consider the following questions that are among the $100$ most viewed questions on \url{https://askubuntu.com/}:
+Consider the following questions that are among the $100$ most viewed questions on askubuntu.com:
 \begin{enumerate}
-\item How do I save terminal output to a file? (Verifiable Minimal)
-\item How to list all installed packages? (Unverifiable Minimal)
-\item How do I install Ubuntu alongside a pre-installed Windows with UEFI? (Unknowable)
+\item How do I save terminal output to a file? %(Verifiable Minimal)
+\item How to list all installed packages? %(Unverifiable Minimal)
+\item How do I install Ubuntu alongside a pre-installed Windows with UEFI? %(Unknowable)
 \end{enumerate}
-Further lets assume that we have access to Ubuntu sandboxes, can we verify CLI commands satisfying these prompts? ``How do I save the terminal output to a file?'' can be verified by writing
-the terminal output to a file and checking that the files contents matches the terminal output. However it is not clear that the prompt ``How to list all installed packages?'' can be
-verified in a sandbox since it would require knowing all packages installed in the sandbox. Finally it is clear that no set of CLI commands run in a Ubuntu sandbox can satisfy the question
-``How do I install Ubuntu alongside a pre-installed Windows with UEFI?''. This is a problem for any CLI command sandbox verification system since not all prompts or CLI command responses
-can be verified.\\
+If we have access to a Ubuntu sandbox, can we verify CLI commands answering these questions? ``How do I save the terminal output to a file?'' can be verified by writing
+the terminal output to a file and checking that the files contents matches the terminal output. But it is not clear how to verify a set of commands that purport to list all installed packages 
+since it would require knowing all packages installed in the sandbox. And no set of CLI commands run in a Ubuntu sandbox can satisfy the question
+``How do I install Ubuntu alongside a pre-installed Windows with UEFI?''. This inability to verify every command set a problem for any sandbox verification system, not just for Linux CLI 
+command verification system.\\
 
-This project attempts to solve this problem by classifying prompts and proposed CLI command responses. The following section introduces a simple 8bit Adder system which is easier to reason
-about than Ubuntu and example prompts. We then outline $5$ categories that we hope cover all possible system prompts and show that these prompts can be classified with a decider model like
-Cloudflare's Clef-Flash model. Finally we return to the three Linux prompts and show that a similar system can also be used to classify Linus prompts.
+This project attempts to solve this problem by classifying questions/prompts and CLI command sets proposed by LLMs to answer these questions. 
+The following section introduces a simple 8bit Adder system and example prompts which are easier to reason about than Ubuntu. 
+I then outline $5$ categories that I hope cover all possible system prompts and show that the 8but Adder prompts can be classified with a decider model like
+Cloudflare's Clef-Flash model. Finally I return to the three Linux prompts and show that a similar Clef-Flash decider model system can also be used to classify Linux prompts.
 
 \section{8bit Adder System}
 
-Lets imagine a simple 8bit adder service. The aim of this system was to be easy to reason about rather than useful. The 8bit Adders functionality is detailed below:
+Lets imagine a simple 8bit adder service. The aim of this system is to be easy to reason about rather than useful. The 8bit Adders functionality is detailed below:
 
 \begin{enumerate}
 \item The adder is a micro service whose endpoints are accessible via routes of the form GET \url{http://localhost/endpoint}
@@ -110,57 +111,68 @@ Lets imagine a simple 8bit adder service. The aim of this system was to be easy 
 
 The prompt taxonomy I settled on for system prompts is:
 \begin{itemize}
-\item Unknowable: Prompts that cannot be answered by the system alone.
-\item Unverifiable: Prompts that cannot be verified by the prompter.
-\item Unverifiable Minimal: Prompts that cannot be verified by the prompter and whose system commands are the minimal set required.
-\item Verifiable: Prompts that can be verified by the prompter.
-\item Verifiable Minimal: Prompts that can be verified by the prompter and whose system commands are the minimal set required.
+\item \textbf{Unknowable:} Prompts that cannot be answered by the system alone now.
+\item \textbf{Unverifiable:} Prompts and command sets that cannot be verified by the prompter.
+\item \textbf{Unverifiable Minimal:} Prompts and command sets that cannot be verified by the prompter and whose system commands are the minimal set required.
+\item \textbf{Verifiable:} Prompts and command sets that can be verified by the prompter.
+\item \textbf{Verifiable Minimal:} Prompts and command sets that can be verified by the prompter and whose system commands are the minimal set required.
 \end{itemize}
 
-Below examples 8bit adder prompts, Spark Muse generated commands for the 8bit adder system, and my classification:
+Below are examples 8bit adder prompts, Muse Code generated commands for the 8bit adder system, and my classification of the prompts and command sets:\\
+
 \begin{itemize}
-\footnotesize
-\item How do I tell what language the system is written?\\
-Commands: GET \url{http://localhost/language}\\
-Classification: Unknowable
-\item How do I know the services log timestamps are accurate?\\
-Commands: GET \url{http://localhost/add/10/20}, GET \url{http://localhost/time}, GET \url{http://localhost/logs}\\	
-Classification: Unverifiable
-\item How do I know the services log timestamps are accurate?\\	
-Commands: GET \url{http://localhost/timestamps}\\	
-Classification: Unverifiable Minimal
-\item How do I add 5 and 7 using the adder service?\\
-Commands: GET \url{http://localhost/add/5/7}, GET \url{http://localhost/logs}\\ 
-Classification: Verifiable
-\item How do I add 5 and 7 using the adder service?\\
-Commands: GET \url{http://localhost/add/5/7}\\ 
-Classification: Verifiable Minimal
+\item How do I tell what language the system is written?
+  \begin{itemize}
+    \item Commands: GET \url{http://localhost/language}
+    \item Classification: Unknowable
+  \end{itemize}
+\item How do I know the services log timestamps are accurate?
+  \begin{itemize}
+    \item Commands: GET \url{http://localhost/add/10/20}, GET \url{http://localhost/time}, GET \url{http://localhost/logs}
+    \item Classification: Unverifiable
+  \end{itemize}
+\item How do I know the services log timestamps are accurate?
+  \begin{itemize}
+    \item Commands: GET \url{http://localhost/timestamps}
+    \item Classification: Unverifiable Minimal
+  \end{itemize}
+\item How do I add 5 and 7 using the adder service?
+  \begin{itemize}
+    \item Commands: GET \url{http://localhost/add/5/7}, GET \url{http://localhost/logs}
+    \item Classification: Verifiable
+  \end{itemize}
+\item How do I add 5 and 7 using the adder service?
+  \begin{itemize}
+    \item Commands: GET \url{http://localhost/add/5/7}
+    \item Classification: Verifiable Minimal
+  \end{itemize}
 \end{itemize}
+Note that these examples are drawn from a synthetic dataset and to get Muse Code to reliably generate non-minimal command sets for testing I asked that it generate commands that would self verify the result.
 
 \section{8bit Adder Prompt Classification}
 
-The prompt classifier queries the Cloudflare decider model Clef-Flash with either 1 or 3 of the questions below following the flow in \Cref{fig:qtree}.
-
+The prompt classifier queries the Cloudflare decider model Clef-Flash with either 1 or 3 of the questions below following the question tree in \Cref{fig:qtree}. 
 \begin{itemize}
 \item Q1: Is the prompt answerable by the system according to its specification?
 \item Q2: Does the prompt ask the system to perform an action with a checkable result, and not about things that require perfect knowledge of the system (such as whether the system logs are complete or accurate, what other users did, timestamp accuracy, etc.)?
 \item Q3, Q4: Given the system specification is every request in the LLM\_response required for the prompt's task?
 \end{itemize}
 
-\begin{figure}
+\begin{figure}[H]
   \centering
-      \includegraphics[width=0.6\textwidth]{question_tree.png}
+      \includegraphics[width=0.7\textwidth]{question_tree.png}
   \caption{}
   \label{fig:qtree}
 \end{figure}
 
-Clef-Flash returns the answer to the question (Y/N) and a probability for the answer. With Muse Code's help I tuned both the questions and the decision cutoff points for the questions in order to achieve the following results.
-I think this tuning likely over fit the 8bit Adder prompt data set which consists of only 50 prompts, 10 in each category. However my goal here was not to have this prompt classification framework generalize
-but only to show that it can work, and I hope the following results show that.\\
+Clef-Flash model returns a binary answer and a confidence probability for the answer. With Muse Code's help I tuned both the questions and the decision cutoff points
+for the answer confidence in order to achieve the following results. I think this tuning likely over fit the 8bit Adder prompt data set 
+which consists of only 50 prompts, 10 in each category. However my goal here was not to have this prompt classification framework generalize
+but only to show that it can work.\\
 
-On the set of 8bit Adder prompts in shuffled\_prompts\_4.csv the Clef-Flash model using the question tree in \Cref{fig:qtree}, the questions above, 
-and the cutoff points $\{q1:0.07, q2:0.82, q3:0.3, q4:0.6\}$ achieved a categorization accuracy of $40/50~(80.0\%)$. The per category accuracy, precision, and recall are given in \Cref{tab:adder_results}.
-
+On the set of 8bit Adder prompts command set pairs in shuffled\_prompts\_4.csv, using the question tree in \Cref{fig:qtree}, the questions above, 
+and the cutoff points \{q1:0.07, q2:0.82, q3:0.3, q4:0.6\}; the Clef-Flash model achieved a categorization accuracy of $40/50~(80.0\%)$. 
+The per category accuracy, precision, and recall are given in \Cref{tab:adder_results}.
 \begin{table}[H]
 \centering
 \begin{tabular}{llll}
@@ -171,37 +183,37 @@ Unverifiable Minimal  &6/10 (60.0\%)    &0.86     &0.60\\
 Verifiable            &8/10 (80.0\%)    &1.00     &0.80\\
 Verifiable Minimal    &7/10 (70.0\%)    &0.78     &0.70
 \end{tabular}
-\caption{8Bit Adder Prompt Classification Results}
+\caption{8Bit Adder Prompt \& Command Set Classification Results}
 \label{tab:adder_results}
 \end{table}
 
-The confusion matrix for the prompt classification of the 8bit Adder prompts is given in \Cref{fig:adder_results}.
-
+The confusion matrix for the prompt and command set classification of the 8bit Adder prompts is given in \Cref{fig:adder_results}.
 \begin{figure}[H]
   \centering
       \includegraphics[width=0.8\textwidth]{v17_8bit_adder_clef-flash.png}
-  \caption{8Bit Adder Prompt Classification Confusion Matrix}
+  \caption{8Bit Adder Prompt \& Command Set Classification Confusion Matrix}
   \label{fig:adder_results}
 \end{figure}
 
 \section{Ubuntu Prompt Classification}
 
-Given that the classification results for the 8bit Adder prompts appeared to work we decided to see if the the classification would also work on the 100 most viewed questions on \url{https://askubuntu.com/}.
-For prompts we did not use the questions themselves which can be lengthy but the question titles are usually more focused. We used Muse Spark to get command responses for the prompts and then I labeled them
-giving linus\_question\_responses\_groundtruth.csv. The fact that I labeled the Linux prompt is a weakness because my labeling might be incorrect. Still for a POC I think the following results do suggest
-that classifying Linux prompts is possible even if not all the ground truth classifications are necessarily accurate.\\
+Given that the classification results for the 8bit Adder prompts and command sets appeared to work I decided to see if the the classification would also work on the 100 most viewed questions on askubuntu.com.
+For the prompts I used the question titles as the questions themselves can be long and unfocused. I used Muse Code to get command sets satisfying the prompts and then I labeled the prompt command set pairs
+to produce the data set in linux\_question\_responses\_groundtruth.csv. The fact that I labeled the Linux prompt is a weakness because my labeling might be incorrect. 
+But for a POC I think self labeling the ground truth is acceptable and the following results do suggest that classifying Linux prompts using a decide model like Clef-Flash
+is possible even if not all the ground truth classifications are correct.\\
 
-Again I used Muse Spark to tune the probability cutoffs and the phrasing of Q2 which depends on what actions the system takes which can and cannot be verified. In the future we would like to find a phrasing 
-of Q2 that generalizes better across systems. The system definition, Q2, and the cutoffs we settled on where:
+As for the 8bit Adder I used Muse Code to tune the probability cutoffs and the phrasing of question Q2. The wording of Q2 depends on what actions the system takes which can and cannot be verified. 
+In the future I would like to find a phrasing of Q2 that generalizes better across systems. The system definition, Q2 phrasing, and the cutoffs I settled on where:
 \begin{itemize}
 \item System Definition: The system is a Linux OS Ubuntu distribution version 26.04.
 \item Q2: Does the prompt ask the system to perform an action with a checkable result (modifying an application, file, or user), and not for information only the system itself knows (package list, system version, users, logs, etc)?
-\item Cutoffs: $\{q1: 0.21, q2: 0.11, q3: 0.08, q4: 0.25\}$
+\item Cutoffs: \{q1:0.21, q2:0.11, q3:0.08, q4:0.25\}
 \end{itemize}
 
-Using these parameters the categorization accuracy of Linux prompts was $79/100~(79.0\%)$, while impressive at first glance this high degree of accuracy is largely due to most of the prompts in the ground truth set
-being classified as Verifiable Minimal. The per category accuracy, precision, and recall are given in \Cref{tab:linux_results}.
-
+Using these parameters the categorization accuracy of Linux prompts and command set pairs was $79/100~(79.0\%)$. While this is impressive at first glance the high degree of accuracy is 
+largely due to most of the prompts in the ground truth set being classified as Verifiable Minimal. The per category accuracy, precision, recall, and confusion matrix in \Cref{tab:linux_results} and
+\Cref{fig:linux_results} paint a more accurate picture of the mixed results.
 \begin{table}[H]
 \centering
 \begin{tabular}{llll}
@@ -212,31 +224,32 @@ Unverifiable Minimal  &12/14 (85.7\%) &0.60   &0.86\\
 Verifiable            &0/1 (0.0\%)    &0.00   &0.00\\
 Verifiable Minimal    &66/80 (82.5\%) &0.96   &0.82
 \end{tabular}
-\caption{Linux Prompt Classification Results}
+\caption{Linux Prompt \& Command Set Classification Results}
 \label{tab:linux_results}
 \end{table}
 
-The confusion matrix for the prompt classification of the Linux prompts is given in \Cref{fig:linux_results}.
 
 \begin{figure}[H]
   \centering
       \includegraphics[width=0.8\textwidth]{v20_linux_clef-flash.png}
-  \caption{Linux Prompt Classification Confusion Matrix}
+  \caption{Linux Prompt \& Command Set Classification Confusion Matrix}
   \label{fig:linux_results}
 \end{figure}
 
-Perhaps a better classification to test moving forward given that most popular questions on \url{https://askubuntu.com/} and the set of commands generated by Muse Spark are Verifiable Minimal, is
-classifying prompts and command sets as either Verifiable Minimal or not. This simpler taxonomy is has some justification in that Verifiable Minimal command sets can in theory be verified in a
-sandbox while all other classifications cannot.\\
-
-The accuracy, precision, recall, and specificity of the Verifiable Minimal prompt classifier are:
+Perhaps a more useful classification given that most questions on askubuntu.com and the set of commands pairs generated by Muse Code are Verifiable Minimal is the binary
+classification as Verifiable Minimal or not. This binary classification has some justification in that Verifiable Minimal command sets can be verified in a
+sandbox while other classifications cannot. The accuracy, precision, recall, and specificity of the Verifiable Minimal binary classifier for Linux prompts and command set pairs using the Clef-Flash model are:
 \begin{itemize}
 \item Accuracy: 83.0\%
 \item Precision: 0.96
 \item Recall: 0.82
 \item Specificity: 0.85
 \end{itemize}
-with 66 True Positives, 3 False Positives, 14 False Negatives, and 17 True Negatives. Meaning a model like this could be used with some effectivness to classify prompt and command set pairs that are not Verifiable Minimal
-at the cost of miss classifying about 17.5\% of Verifiable Minimal prompts.
+Statistics which are computed from 66 True Positives, 3 False Positives, 14 False Negatives, and 17 True Negatives.
 
+\section{Conclusion}
+
+My take way from the results above are that while I need a bigger data set and a more rigorous means of labeling it, Linux prompt command set pairs probably can be classified as Verifiable Minimal or not, especially
+if a decider model is tuned for this classification. Whether a useful automated sandbox system can be built to validate Linux commands using these classifications to flag prompt
+command set pairs that cannot be verified remains to be seen.
 \end{document}
