@@ -4,6 +4,7 @@ log_archive/
 log_*
 __pycache__/
 *.pyc
+*.swp
 .env
 .env.*
 .venv/
