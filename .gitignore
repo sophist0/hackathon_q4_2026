@@ -5,6 +5,11 @@ log_*
 __pycache__/
 *.pyc
 *.swp
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
 .env
 .env.*
 .venv/
