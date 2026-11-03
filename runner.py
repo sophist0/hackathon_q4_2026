@@ -118,17 +118,17 @@ def run_all(rows, tree, backend, transport, threshold=0.5, cutoff=0.5, base_dir=
     print(f"processing {total} prompts with backend {backend}")
     results = []
     for number, row in enumerate(pending, start=1):
-        print(f"[{number}/{total}] {row['prompt_text'][:60]}")
-        results.append(
-            run_prompt(
-                row,
-                tree,
-                backend,
-                transport,
-                threshold=threshold,
-                cutoff=cutoff,
-                base_dir=base_dir,
-            )
+        result = run_prompt(
+            row,
+            tree,
+            backend,
+            transport,
+            threshold=threshold,
+            cutoff=cutoff,
+            base_dir=base_dir,
         )
+
+        print(f"[{number}/{total}] {result['prompt_text']} -> {result['predicted_label']}")
+        results.append(result)
     print(f"done: processed {len(results)}/{total} prompts")
     return results
