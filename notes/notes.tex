@@ -164,7 +164,31 @@ Clef-Flash returns the answer to the question (Y/N) and a probability for the an
 I think this tuning likely over fit the 8bit Adder prompt data set which consists of only 50 prompts, 10 in each category. However my goal here was not to have this prompt classification framework generalize
 but only to show that it can work, and I hope the following results show that.\\
 
-ADD RESULTS\\
+On the set of 8bit Adder prompts in shuffled\_prompts\_4.csv the Clef-Flash model using the question tree in \Cref{fig:qtree}, the questions above, 
+and the cutoff points [ADD CUTOFF POINTS] achieved a categorization accuracy of $40/50~(80.0\%)$. The per category accuracy, precision, and recall are given in \Cref{tab:adder_results}.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llll}
+\textbf{Category} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} \\
+Unknowable            &10/10 (100.0\%)  & 0.62    &1.00\\
+Unverifiable          &9/10 (90.0\%)    &0.90     &0.90\\
+Unverifiable Minimal  &6/10 (60.0\%)    &0.86     &0.60\\
+Verifiable            &8/10 (80.0\%)    &1.00     &0.80\\
+Verifiable Minimal    &7/10 (70.0\%)    &0.78     &0.70
+\end{tabular}
+\caption{8Bit Adder Prompt Classification Results}
+\label{tab:adder_results}
+\end{table}
+
+The confusion matrix for the prompt classification of the 8bit Adder prompts are given in \Cref{fig:adder_results}.
+
+\begin{figure}[H]
+  \centering
+      \includegraphics[width=0.8\textwidth]{v17_8bit_adder_clef-flash.png}
+  \caption{8Bit Adder Prompt Classification Confusion Matrix}
+  \label{fig:adder_results}
+\end{figure}
 
 \section{Ubuntu Prompt Classification}
 
