@@ -1,0 +1,150 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage[left=1cm,right=1cm,top=1cm,bottom=2cm]{geometry}
+\usepackage{xcolor}
+\usepackage{subcaption}
+\usepackage{listings}
+\usepackage{tabularx}
+\usepackage{gensymb}
+\usepackage{verbatim}
+%\usepackage{subfig}
+\usepackage{mathtools}
+\usepackage{mathdefs}
+\usepackage{placeins}
+\usepackage{float}
+
+\usepackage{amsthm}
+\usepackage{graphicx}
+%\usepackage{subfigure}
+\usepackage{mathdefs}
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+\usepackage{bm}
+\usepackage{bbm}
+\usepackage{kbordermatrix}
+\usepackage{mathdefs}
+\usepackage{mathrsfs}
+
+\newtheorem{remark}{Remark}
+\newtheorem{corollary}{Corollary}
+\newtheorem{definition}{Definition}
+\newtheorem{example}{Example}
+\newtheorem{fact}{Fact}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{theorem}{Theorem}
+
+\newcommand{\assref}[1]{Ass.~\ref{ass:#1}}
+\newcommand{\clmref}[1]{Claim~\ref{clm:#1}}
+\newcommand{\conref}[1]{Conj.~\ref{con:#1}}
+\newcommand{\corref}[1]{Cor.~\ref{cor:#1}}
+\newcommand{\defref}[1]{Def.~\ref{def:#1}}
+\newcommand{\exaref}[1]{Ex.~\ref{exa:#1}}
+\newcommand{\facref}[1]{Fact~\ref{fac:#1}}
+\newcommand{\lemref}[1]{Lem.~\ref{lem:#1}}
+\newcommand{\prpref}[1]{Prop.~\ref{prp:#1}}
+\newcommand{\thmref}[1]{Thm.~\ref{thm:#1}}
+\newcommand{\eqnref}[1]{(\ref{eq:#1})}
+\newcommand{\secref}[1]{\S\ref{sec:#1}}
+\newcommand{\appref}[1]{App.~\ref{app:#1}}
+\newcommand{\figref}[1]{Fig.~\ref{fig:#1}}
+\newcommand{\tabref}[1]{Table~\ref{tab:#1}}
+\newcommand{\algoref}[1]{Alg.~\ref{alg:#1}}
+\newcommand{\remref}[1]{Remark~\ref{rem:#1}}
+
+\usepackage{hyperref}
+\hypersetup{colorlinks=false}
+\hypersetup{colorlinks,citecolor=black,filecolor=black,linkcolor=black,urlcolor=black}\label{sr_1}
+
+
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+
+% disable indent
+\setlength\parindent{0pt}
+
+\title{Prompt Classifier}
+\author{Placeholder}
+
+\begin{document}
+\maketitle
+
+\hrulefill\\
+
+\section{Introduction}
+
+As a Linux user I sometimes find myself running command line interface (CLI) commands that I do not fully understand. Even if I look up the documentation for the commands it is not always clear what
+effect a command a will have on my specific machine. One alternative to parsing the documentation is to run the commands in a sandbox mirroring my system see what happens. Simple in theory
+but practically I ran into a problem, it was often impossible to verify whether a command worked as expected.\\
+
+Consider the following questions that are among the $100$ most viewed questions on \url{https://askubuntu.com/}:
+\begin{enumerate}
+\item How do I save terminal output to a file? (Verifiable Minimal)
+\item How to list all installed packages? (Unverifiable Minimal)
+\item How do I install Ubuntu alongside a pre-installed Windows with UEFI? (Unknowable)
+\end{enumerate}
+Further lets assume that we have access to Ubuntu sandboxes, can we verify CLI commands satisfying these prompts? ``How do I save the terminal output to a file?'' can be verified by writing
+the terminal output to a file and checking that the files contents matches the terminal output. However it is not clear that the prompt ``How to list all installed packages?'' can be
+verified in a sandbox since it would require knowing all packages installed in the sandbox. Finally it is clear that no set of CLI commands run in a Ubuntu sandbox can satisfy the question
+``How do I install Ubuntu alongside a pre-installed Windows with UEFI?''. This is a problem for any CLI command sandbox verification system since not all prompts or CLI command responses
+can be verified.\\
+
+This project attempts to solve this problem by classifying prompts and proposed CLI command responses. The following section introduces a simple 8bit Adder system which is easier to reason
+about than Ubuntu and example prompts. We then outline $5$ categories that we hope cover all possible system prompts and show that these prompts can be classified with a decider model like
+Cloudflare's Clef-Flash model. Finally we return to the three Linux prompts and show that a similar system can also be used to classify Linus prompts.
+
+\section{8bit Adder System}
+
+Lets imagine a simple 8bit adder service. The aim of this system was to be easy to reason about rather than useful. The 8bit Adders functionality is detailed below:
+
+\begin{enumerate}
+\item The adder is a micro service whose endpoints are accessible via routes of the form GET \url{http://localhost/endpoint}
+
+\item The adder supports adding 8 bit non-negative numbers A and B at endpoint GET \url{http://localhost/add/{A}/{B}} and returns A+B = R if R is 8 bit or R=InvalidRequest if it is not.
+
+\item The adder also supports getting the adder logs at endpoint GET \url{http://localhost/logs} which return all requests made to the service and the services responses as a json in the form {request\_id, timestamp, request, response}.
+
+\item All other requests to the service for the form \url{http://localhost/X} where X is any string including the empty string but excepting the routes detailed above return R=InvalidRequest.
+\end{enumerate}
+
+\section{8bit Adder Prompt Taxonomy}
+
+The prompt taxonomy I settled on for system prompts is:
+\begin{itemize}
+\item Unknowable: Prompts that cannot be answered by the system alone.
+\item Unverifiable: Prompts that cannot be verified by the prompter.
+\item Unverifiable Minimal: Prompts that cannot be verified by the prompter, and whose system commands are the minimal set required to satisfy the prompt.
+\item Verifiable: Prompts that can be verified by the prompter.
+\item Verifiable Minimal: Prompts that can be verified by the prompter, and whose system commands are the minimal set required to satisfy the prompt.
+\end{itemize}
+
+questions:
+  - id: q1
+    text: "Is the prompt answerable by the system according to its specification? (Y/N)"
+    on_Y: q2
+    on_N: end_Unknowable
+
+  - id: q2
+    text: "Does the prompt ask the system to perform an action with a checkable result, and not about things that require perfect knowledge of the system (such as whether the system logs are complete or accurate, what other users did, timestamp accuracy, etc.)? (Y/N)"
+    on_Y: q3
+    on_N: q4
+
+  - id: q3
+    text: "Given the system specification is every request in the LLM_response required for the prompt's task? (Y/N)"
+    on_Y: end_Verifiable_Minimal
+    on_N: end_Verifiable
+
+  - id: q4
+    text: "Given the system specification is every request in the LLM_response required for the prompt's task? (Y/N)"
+    on_Y: end_Unverifiable_Minimal
+    on_N: end_Unverifiable
+
+\section{8bit Adder Prompt Classification}
+
+\section{Ubuntu Prompt Classification}
+
+\end{document}
