@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025/Debian) (preloaded format=pdflatex 2026.11.2)  2 NOV 2026 21:08
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (TeX Live 2025/Debian) (preloaded format=pdflatex 2026.11.2)  2 NOV 2026 22:36
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -688,7 +688,23 @@ File: v17_8bit_adder_clef-flash.png Graphic file (type png)
 Package pdftex.def Info: v17_8bit_adder_clef-flash.png  used on input line 188.
 
 (pdftex.def)             Requested size: 432.48355pt x 360.4228pt.
-[3 <./question_tree.png>] [4 <./v17_8bit_adder_clef-flash.png>] (./notes.aux)
+[3 <./question_tree.png>]
+Underfull \hbox (badness 10000) in paragraph at lines 195--199
+
+ []
+
+[4 <./v17_8bit_adder_clef-flash.png>]
+<v20_linux_clef-flash.png, id=90, 433.62pt x 361.35pt>
+File: v20_linux_clef-flash.png Graphic file (type png)
+<use v20_linux_clef-flash.png>
+Package pdftex.def Info: v20_linux_clef-flash.png  used on input line 229.
+(pdftex.def)             Requested size: 432.48355pt x 360.4228pt.
+
+Underfull \hbox (badness 10000) in paragraph at lines 234--237
+
+ []
+
+[5 <./v20_linux_clef-flash.png>] [6] (./notes.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
@@ -697,10 +713,10 @@ Package rerunfilecheck Info: File `notes.out' has not changed.
 (rerunfilecheck)             Checksum: 91926A82BA69392597E3B513B9C5DDD4;820.
  ) 
 Here is how much of TeX's memory you used:
- 17265 strings out of 467533
- 278231 string characters out of 5422138
+ 17280 strings out of 467533
+ 278576 string characters out of 5422138
  737387 words of memory out of 5000000
- 45921 multiletter control sequences out of 15000+600000
+ 45932 multiletter control sequences out of 15000+600000
  645124 words of font info for 107 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  75i,8n,79p,302b,543s stack positions out of 10000i,1000n,20000p,200000b,200000s
@@ -709,13 +725,14 @@ r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/shar
 e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texli
 ve/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texlive/texm
 f-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr/share/texlive/texmf-dist/
-fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/share/texlive/texmf-dist/fonts/
-type1/public/amsfonts/cm/cmtt12.pfb></usr/share/texmf/fonts/type1/public/cm-sup
-er/sfrm1000.pfb></usr/share/texmf/fonts/type1/public/cm-super/sfrm1200.pfb>
-Output written on notes.pdf (4 pages, 207102 bytes).
+fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/
+type1/public/amsfonts/cm/cmtt10.pfb></usr/share/texlive/texmf-dist/fonts/type1/
+public/amsfonts/cm/cmtt12.pfb></usr/share/texmf/fonts/type1/public/cm-super/sfr
+m1000.pfb></usr/share/texmf/fonts/type1/public/cm-super/sfrm1200.pfb>
+Output written on notes.pdf (6 pages, 264693 bytes).
 PDF statistics:
- 132 PDF objects out of 1000 (max. 8388607)
- 102 compressed objects within 2 object streams
- 20 named destinations out of 1000 (max. 500000)
- 51 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 154 PDF objects out of 1000 (max. 8388607)
+ 118 compressed objects within 2 object streams
+ 24 named destinations out of 1000 (max. 500000)
+ 56 words of extra memory for PDF output out of 10000 (max. 10000000)
 
