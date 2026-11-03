@@ -74,23 +74,23 @@
 
 As a Linux user I sometimes find myself running command line interface (CLI) commands that I do not fully understand. Even if I look up the documentation for the commands it is not always clear what
 effect a command a will have on my specific machine. One alternative to parsing the documentation to understand what a set of commands does is to run the commands in a sandbox see what happens. 
-While running commands in a sandbox simple in theory, practically I ran into a problems since it can be impossible to verify whether a set of commands produced the desired outcome without side effects.\\
+While running commands in a sandbox simple in theory, practically I ran into problems since it can be impossible to verify whether a set of commands produced the desired outcome without side effects.\\
 
 Consider the following questions that are among the $100$ most viewed questions on askubuntu.com:
 \begin{enumerate}
-\item How do I save terminal output to a file? %(Verifiable Minimal)
-\item How to list all installed packages? %(Unverifiable Minimal)
-\item How do I install Ubuntu alongside a pre-installed Windows with UEFI? %(Unknowable)
+\item How do I save terminal output to a file?
+\item How to list all installed packages?
+\item How do I install Ubuntu alongside a pre-installed Windows with UEFI?
 \end{enumerate}
 If we have access to a Ubuntu sandbox, can we verify CLI commands answering these questions? ``How do I save the terminal output to a file?'' can be verified by writing
 the terminal output to a file and checking that the files contents matches the terminal output. But it is not clear how to verify a set of commands that purport to list all installed packages 
 since it would require knowing all packages installed in the sandbox. And no set of CLI commands run in a Ubuntu sandbox can satisfy the question
-``How do I install Ubuntu alongside a pre-installed Windows with UEFI?''. This inability to verify every command set a problem for any sandbox verification system, not just for Linux CLI 
+``How do I install Ubuntu alongside a pre-installed Windows with UEFI?''. This inability to verify every command set is a problem for any sandbox verification system, not just for Linux CLI 
 command verification system.\\
 
 This project attempts to solve this problem by classifying questions/prompts and CLI command sets proposed by LLMs to answer these questions. 
 The following section introduces a simple 8bit Adder system and example prompts which are easier to reason about than Ubuntu. 
-I then outline $5$ categories that I hope cover all possible system prompts and show that the 8but Adder prompts can be classified with a decider model like
+I then outline $5$ categories that I hope cover all possible system prompts and show that the 8bit Adder prompts can be classified with a decider model like
 Cloudflare's Clef-Flash model. Finally I return to the three Linux prompts and show that a similar Clef-Flash decider model system can also be used to classify Linux prompts.
 
 \section{8bit Adder System}
@@ -204,15 +204,16 @@ But for a POC I think self labeling the ground truth is acceptable and the follo
 is possible even if not all the ground truth classifications are correct.\\
 
 As for the 8bit Adder I used Muse Code to tune the probability cutoffs and the phrasing of question Q2. The wording of Q2 depends on what actions the system takes which can and cannot be verified. 
-In the future I would like to find a phrasing of Q2 that generalizes better across systems. The system definition, Q2 phrasing, and the cutoffs I settled on where:
+In the future I would like to find a phrasing of Q2 that generalizes better across systems. The system definition, Q2 phrasing, and the cutoffs I settled on were:
 \begin{itemize}
 \item System Definition: The system is a Linux OS Ubuntu distribution version 26.04.
 \item Q2: Does the prompt ask the system to perform an action with a checkable result (modifying an application, file, or user), and not for information only the system itself knows (package list, system version, users, logs, etc)?
 \item Cutoffs: \{q1:0.21, q2:0.11, q3:0.08, q4:0.25\}
 \end{itemize}
 
-Using these parameters the categorization accuracy of Linux prompts and command set pairs was $79/100~(79.0\%)$. While this is impressive at first glance the high degree of accuracy is 
-largely due to most of the prompts in the ground truth set being classified as Verifiable Minimal. The per category accuracy, precision, recall, and confusion matrix in \Cref{tab:linux_results} and
+Using these parameters the categorization accuracy of Linux prompts and command set pairs was $79/100~(79.0\%)$. While this is impressive at first glance
+a classifier that labeled everything Verifiable Minimal would achieve an accuracy 80\% since most of the prompts in the ground truth set are Verifiable Minimal. 
+The per category accuracy, precision, recall, and confusion matrix in \Cref{tab:linux_results} and
 \Cref{fig:linux_results} paint a more accurate picture of the mixed results.
 \begin{table}[H]
 \centering
@@ -249,7 +250,7 @@ Statistics which are computed from 66 True Positives, 3 False Positives, 14 Fals
 
 \section{Conclusion}
 
-My take way from the results above are that while I need a bigger data set and a more rigorous means of labeling it, Linux prompt command set pairs probably can be classified as Verifiable Minimal or not, especially
+Takeway from the results above are that while I need a bigger data set and a more rigorous means of labeling it, Linux prompt command set pairs probably can be classified as Verifiable Minimal or not, especially
 if a decider model is tuned for this classification. Whether a useful automated sandbox system can be built to validate Linux commands using these classifications to flag prompt
 command set pairs that cannot be verified remains to be seen.
 \end{document}
