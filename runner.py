@@ -44,7 +44,7 @@ def load_ground_truth_rows(csv_path: str | Path) -> list[dict[str, str]]:
     """Load ground-truth rows, mapping CSV columns to runner row keys.
 
     Each row gets a stable ``row_id``: the ``Row`` column when the CSV has
-    one (e.g. ``shuffled_prompts_4.csv``), else its 1-based data position.
+    one (e.g. ``adder_gt.csv``), else its 1-based data position.
     The id travels with the row into the logs so the comparator can join
     on it instead of fuzzy text matching. Blank lines (the CSV contains an
     empty ``|||||`` filler line) are skipped.

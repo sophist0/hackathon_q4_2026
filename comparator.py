@@ -1,7 +1,7 @@
 """Comparator: score backend runs against the ground-truth labels.
 
 Per ``docs/design_draft.md`` the independent ground truth
-(``data/shuffled_prompts_4.csv``) is the sole baseline: each backend's
+(``data/adder_gt.csv``) is the sole baseline: each backend's
 predicted label is compared against the row's ``Categorization`` label,
 while backend-vs-backend agreement is diagnostic only.
 
@@ -491,7 +491,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("logs", nargs="+", help="JSONL log file(s) written by logger.write_jsonl")
     parser.add_argument(
         "--ground-truth",
-        default="data/shuffled_prompts_4.csv",
+        default="data/adder_gt.csv",
         help="ground-truth CSV (Categorization labels are the baseline)",
     )
     parser.add_argument(

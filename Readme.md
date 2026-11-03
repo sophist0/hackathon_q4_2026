@@ -160,7 +160,7 @@ from runner import load_ground_truth_rows, run_prompt
 from logger import write_jsonl
 
 tree = load_tree("question_tree.yml")
-rows = load_ground_truth_rows("data/shuffled_prompts_4.csv")
+rows = load_ground_truth_rows("data/adder_gt.csv")
 
 def my_transport(request):  # stub — swap in a real backend call here
     return {"answer": "Y", "p": 0.9}
@@ -190,7 +190,7 @@ This walks all 50 ground-truth rows (10 per label), keeping each row's
 Yes, pass both args — the defaults run the 8-bit adder set:
 
 ```bash
-python run_prompt_classifier.py --tree question_tree_linux.yml --csv data/linux_question_responses_groundtruth.csv
+python run_prompt_classifier.py --tree question_tree_linux.yml --csv data/linux_gt.csv
 ```
 
 This walks all 100 Linux rows through the Linux OS tree
@@ -199,7 +199,7 @@ default: the tuned adder cutoffs do not transfer to a new system.
 Score the run with:
 
 ```bash
-python comparator.py logs/<newfile>.jsonl --ground-truth data/linux_question_responses_groundtruth.csv
+python comparator.py logs/<newfile>.jsonl --ground-truth data/linux_gt.csv
 ```
 
 All five target labels always appear in the table and confusion
@@ -248,7 +248,7 @@ the test suites show the stub shapes (`tests/test_decider.py`,
 ## Compare backends
 
 `comparator.py` scores logged runs against the ground-truth
-`Categorization` labels in `data/shuffled_prompts_4.csv`
+`Categorization` labels in `data/adder_gt.csv`
 (the sole baseline). It joins on the stable `row_id` each logged row
 carries, so it works whether or not logged rows carry a `category`.
 Rows without a matching `row_id` are reported unscored, never guessed:

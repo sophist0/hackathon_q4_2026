@@ -211,8 +211,8 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tree", default="question_tree.yml",
                         help="tree spec file (e.g. question_tree_linux.yml)")
-    parser.add_argument("--csv", default="data/shuffled_prompts_4.csv",
-                        help="ground-truth CSV (e.g. data/linux_question_responses_groundtruth.csv)")
+    parser.add_argument("--csv", default="data/adder_gt.csv",
+                        help="ground-truth CSV (e.g. data/linux_gt.csv)")
     args = parser.parse_args(argv)
 
     tree = load_tree(args.tree)

@@ -78,7 +78,7 @@ def test_load_ground_truth_rows_supports_linux_headers(tmp_path):
 def test_linux_tree_walk_needs_no_network():
     tree = load_tree(ROOT / "question_tree_linux.yml")
     assert tree.system.id == "linux_os_v1"
-    rows = load_ground_truth_rows(ROOT / "data/linux_question_responses_groundtruth.csv")
+    rows = load_ground_truth_rows(ROOT / "data/linux_gt.csv")
     assert len(rows) == 100
     result = run_prompt(
         rows[0], tree, "jev", _stub([("Y", 0.9), ("Y", 0.9), ("Y", 0.9)]),
